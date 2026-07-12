@@ -40,6 +40,10 @@ func (r *Reader) take(n int) []byte {
 	return view
 }
 
+func (r *Reader) Rest() []byte {
+	return r.take(r.Remaining())
+}
+
 func (r *Reader) ReadByte() (byte, error) {
 	raw := r.take(1)
 	if raw == nil {

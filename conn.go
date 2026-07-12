@@ -1,0 +1,168 @@
+package gocraft
+
+import (
+	"bufio"
+	"bytes"
+	"compress/zlib"
+	"context"
+	"fmt"
+	"io"
+	"net"
+	"time"
+)
+
+const (
+	maxFrameLen    = 1<<21 - 1
+	maxInflatedLen = 1 << 23
+	noCompression  = -1
+)
+
+type Packet struct {
+	ID      VarInt
+	Payload []byte
+}
+
+type Conn struct {
+	transport net.Conn
+	reader    *bufio.Reader
+	threshold int
+}
+
+func Dial(ctx context.Context, address string) (*Conn, error) {
+	var dialer net.Dialer
+
+	transport, err := dialer.DialContext(ctx, "tcp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewConn(transport), nil
+}
+
+func NewConn(transport net.Conn) *Conn {
+	return &Conn{
+		transport: transport,
+		reader:    bufio.NewReader(transport),
+		threshold: noCompression,
+	}
+}
+
+func (c *Conn) SetThreshold(threshold int) {
+	c.threshold = threshold
+}
+
+func (c *Conn) SetDeadline(deadline time.Time) error {
+	return c.transport.SetDeadline(deadline)
+}
+
+func (c *Conn) Close() error {
+	return c.transport.Close()
+}
+
+func (c *Conn) WritePacket(p Packet) error {
+	body := p.ID.Append(nil)
+	body = append(body, p.Payload...)
+
+	frame, err := c.frame(body)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.transport.Write(frame)
+
+	return err
+}
+
+func (c *Conn) ReadPacket() (Packet, error) {
+	frameLen, err := ReadVar[VarInt](c.reader)
+	if err != nil {
+		return Packet{}, err
+	}
+	if frameLen <= 0 || frameLen > maxFrameLen {
+		return Packet{}, fmt.Errorf("gocraft: frame of %d bytes is out of range", frameLen)
+	}
+
+	frame := make([]byte, frameLen)
+	if _, err := io.ReadFull(c.reader, frame); err != nil {
+		return Packet{}, err
+	}
+
+	body := frame
+	if c.threshold != noCompression {
+		if body, err = c.inflate(frame); err != nil {
+			return Packet{}, err
+		}
+	}
+
+	r := NewReader(body)
+
+	var id VarInt
+	if err := id.Decode(r); err != nil {
+		return Packet{}, err
+	}
+
+	return Packet{ID: id, Payload: r.Rest()}, nil
+}
+
+func (c *Conn) frame(body []byte) ([]byte, error) {
+	if c.threshold == noCompression {
+		frame := AppendVar(nil, VarInt(len(body)))
+
+		return append(frame, body...), nil
+	}
+
+	if len(body) < c.threshold {
+		marker := AppendVar(nil, VarInt(0))
+		frame := AppendVar(nil, VarInt(len(marker)+len(body)))
+		frame = append(frame, marker...)
+
+		return append(frame, body...), nil
+	}
+
+	var compressed bytes.Buffer
+
+	zw := zlib.NewWriter(&compressed)
+	if _, err := zw.Write(body); err != nil {
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+
+	inner := AppendVar(nil, VarInt(len(body)))
+	inner = append(inner, compressed.Bytes()...)
+
+	frame := AppendVar(nil, VarInt(len(inner)))
+
+	return append(frame, inner...), nil
+}
+
+func (c *Conn) inflate(frame []byte) ([]byte, error) {
+	r := NewReader(frame)
+
+	var inflatedLen VarInt
+	if err := inflatedLen.Decode(r); err != nil {
+		return nil, err
+	}
+
+	compressed := r.Rest()
+	if inflatedLen == 0 {
+		return compressed, nil
+	}
+	if inflatedLen < 0 || inflatedLen > maxInflatedLen {
+		return nil, fmt.Errorf("gocraft: inflated frame of %d bytes is out of range", inflatedLen)
+	}
+
+	zr, err := zlib.NewReader(bytes.NewReader(compressed))
+	if err != nil {
+		return nil, err
+	}
+	defer zr.Close()
+
+	body := make([]byte, inflatedLen)
+	if _, err := io.ReadFull(zr, body); err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
