@@ -19,30 +19,30 @@ type varint interface {
 	~int32 | ~int64
 }
 
-func widthOf[T varint]() int {
+func _widthOf[T varint]() int {
 	return int(unsafe.Sizeof(T(0))) * bitsPerByte
 }
 
-func maxLenOf[T varint]() int {
-	return (widthOf[T]() + segmentLen - 1) / segmentLen
+func _maxLenOf[T varint]() int {
+	return (_widthOf[T]() + segmentLen - 1) / segmentLen
 }
 
-func toUnsigned[T varint](v T) uint64 {
-	if widthOf[T]() == 32 {
+func _toUnsigned[T varint](v T) uint64 {
+	if _widthOf[T]() == 32 {
 		return uint64(uint32(v))
 	}
 	return uint64(v)
 }
 
-func fromUnsigned[T varint](u uint64) T {
-	if widthOf[T]() == 32 {
+func _fromUnsigned[T varint](u uint64) T {
+	if _widthOf[T]() == 32 {
 		return T(int32(uint32(u)))
 	}
 	return T(int64(u))
 }
 
 func AppendVar[T varint](dst []byte, v T) []byte {
-	u := toUnsigned(v)
+	u := _toUnsigned(v)
 	for u > uint64(segmentBits) {
 		dst = append(dst, byte(u)&segmentBits|continueBit)
 		u >>= uint(segmentLen)
@@ -52,7 +52,7 @@ func AppendVar[T varint](dst []byte, v T) []byte {
 
 func ReadVar[T varint](r io.ByteReader) (T, error) {
 	var u uint64
-	for i := range maxLenOf[T]() {
+	for i := range _maxLenOf[T]() {
 		b, err := r.ReadByte()
 		if err != nil {
 			if i > 0 && errors.Is(err, io.EOF) {
@@ -62,13 +62,13 @@ func ReadVar[T varint](r io.ByteReader) (T, error) {
 		}
 		u |= uint64(b&segmentBits) << (i * segmentLen)
 		if b&continueBit == 0 {
-			return fromUnsigned[T](u), nil
+			return _fromUnsigned[T](u), nil
 		}
 	}
-	return 0, fmt.Errorf("gocraft: variable-length integer exceeds %d bytes", maxLenOf[T]())
+	return 0, fmt.Errorf("gocraft: variable-length integer exceeds %d bytes", _maxLenOf[T]())
 }
 
 func VarLen[T varint](v T) int {
-	u := toUnsigned(v)
+	u := _toUnsigned(v)
 	return (bits.Len64(u|1) + segmentLen - 1) / segmentLen
 }
