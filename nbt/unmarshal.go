@@ -241,9 +241,14 @@ func (u *unmarshaler) array(tag TagType, target reflect.Value) {
 	target.Set(slice)
 }
 
+var arrayElementWidth = map[TagType]int{
+	TagByteArray: 1,
+	TagIntArray:  4,
+	TagLongArray: 8,
+}
+
 func (u *unmarshaler) skipArray(tag TagType, n int) {
-	width := map[TagType]int{TagByteArray: 1, TagIntArray: 4, TagLongArray: 8}[tag]
-	u.dec.take(n * width)
+	u.dec.take(n * arrayElementWidth[tag])
 }
 
 func (u *unmarshaler) setInt(target reflect.Value, value int64) {

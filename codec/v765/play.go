@@ -7,12 +7,12 @@ type DeathLocation struct {
 	Location      gocraft.Position
 }
 
-func (d DeathLocation) Append(dst []byte) []byte {
-	return gocraft.AppendAll(dst, d.DimensionName, d.Location)
+func (p DeathLocation) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.DimensionName, p.Location)
 }
 
-func (d *DeathLocation) Decode(r *gocraft.Reader) error {
-	return gocraft.DecodeAll(r, &d.DimensionName, &d.Location)
+func (p *DeathLocation) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.DimensionName, &p.Location)
 }
 
 type JoinGame struct {

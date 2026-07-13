@@ -62,16 +62,16 @@ func (c *Conn) Close() error {
 	return c.transport.Close()
 }
 
-func (c *Conn) WriteFrame(p Frame) error {
-	body := p.ID.Append(nil)
-	body = append(body, p.Payload...)
+func (c *Conn) WriteFrame(frame Frame) error {
+	body := frame.ID.Append(nil)
+	body = append(body, frame.Payload...)
 
-	frame, err := c.frame(body)
+	encoded, err := c.frame(body)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.transport.Write(frame)
+	_, err = c.transport.Write(encoded)
 
 	return err
 }
