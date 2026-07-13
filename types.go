@@ -22,22 +22,30 @@ type FieldPtr interface {
 	Decode(r *Reader) error
 }
 
-func Marshal(fields ...Field) []byte {
-	var payload []byte
+func AppendAll(dst []byte, fields ...Field) []byte {
 	for _, field := range fields {
-		payload = field.Append(payload)
+		dst = field.Append(dst)
 	}
-	return payload
+
+	return dst
 }
 
-func Unmarshal(payload []byte, fields ...FieldPtr) error {
-	r := NewReader(payload)
+func DecodeAll(r *Reader, fields ...FieldPtr) error {
 	for _, field := range fields {
 		if err := field.Decode(r); err != nil {
 			return err
 		}
 	}
+
 	return nil
+}
+
+func Marshal(fields ...Field) []byte {
+	return AppendAll(nil, fields...)
+}
+
+func Unmarshal(payload []byte, fields ...FieldPtr) error {
+	return DecodeAll(NewReader(payload), fields...)
 }
 
 func _appendBE[T constraints.Unsigned](dst []byte, v T) []byte {
