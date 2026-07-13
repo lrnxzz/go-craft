@@ -1,0 +1,6 @@
+# compiled binaries
+/cli/cli
+
+# test and coverage artifacts
+*.test
+*.out
