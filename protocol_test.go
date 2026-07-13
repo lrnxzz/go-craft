@@ -80,6 +80,19 @@ func TestProtocolIsolatesStateAndDirection(t *testing.T) {
 	}
 }
 
+func TestBindPanicsOnDuplicateRegistration(t *testing.T) {
+	proto := gocraft.NewProtocol()
+	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+
+	defer func() {
+		if recover() == nil {
+			t.Error("expected a panic registering the same key twice, got none")
+		}
+	}()
+
+	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+}
+
 func TestStateAndDirectionString(t *testing.T) {
 	if got := gocraft.StatePlay.String(); got != "play" {
 		t.Errorf("StatePlay.String() = %q, want play", got)

@@ -77,6 +77,9 @@ func Bind[T any](proto *Protocol, state State, dir Direction) {
 		dir:   dir,
 		id:    factory().ID(),
 	}
+	if _, exists := proto.factories[key]; exists {
+		panic(fmt.Sprintf("gocraft: duplicate packet registration for %s %s id 0x%02x", state, dir, key.id))
+	}
 	proto.factories[key] = factory
 }
 
