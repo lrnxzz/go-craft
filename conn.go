@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync/atomic"
 	"time"
 )
 
@@ -25,7 +26,7 @@ type Frame struct {
 type Conn struct {
 	transport net.Conn
 	reader    *bufio.Reader
-	threshold int
+	threshold atomic.Int64
 }
 
 func Dial(ctx context.Context, address string) (*Conn, error) {
@@ -40,15 +41,17 @@ func Dial(ctx context.Context, address string) (*Conn, error) {
 }
 
 func NewConn(transport net.Conn) *Conn {
-	return &Conn{
+	c := &Conn{
 		transport: transport,
 		reader:    bufio.NewReader(transport),
-		threshold: noCompression,
 	}
+	c.threshold.Store(noCompression)
+
+	return c
 }
 
 func (c *Conn) SetThreshold(threshold int) {
-	c.threshold = threshold
+	c.threshold.Store(int64(threshold))
 }
 
 func (c *Conn) SetDeadline(deadline time.Time) error {
@@ -88,7 +91,7 @@ func (c *Conn) ReadFrame() (Frame, error) {
 	}
 
 	body := frame
-	if c.threshold != noCompression {
+	if c.threshold.Load() != noCompression {
 		if body, err = c.inflate(frame); err != nil {
 			return Frame{}, err
 		}
@@ -105,13 +108,14 @@ func (c *Conn) ReadFrame() (Frame, error) {
 }
 
 func (c *Conn) frame(body []byte) ([]byte, error) {
-	if c.threshold == noCompression {
+	threshold := int(c.threshold.Load())
+	if threshold == noCompression {
 		frame := AppendVar(nil, VarInt(len(body)))
 
 		return append(frame, body...), nil
 	}
 
-	if len(body) < c.threshold {
+	if len(body) < threshold {
 		marker := AppendVar(nil, VarInt(0))
 		frame := AppendVar(nil, VarInt(len(marker)+len(body)))
 		frame = append(frame, marker...)
