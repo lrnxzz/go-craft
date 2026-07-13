@@ -16,11 +16,13 @@ type handlerKey struct {
 	id    int32
 }
 
+type packetHandler func(*Client, Packet) error
+
 type Client struct {
 	conn      *Conn
 	protocol  *Protocol
 	state     atomic.Uint32
-	handlers  map[handlerKey][]func(*Client, Packet) error
+	handlers  map[handlerKey][]packetHandler
 	outbound  chan Packet
 	done      chan struct{}
 	closeOnce sync.Once
@@ -30,7 +32,7 @@ func NewClient(conn *Conn, protocol *Protocol) *Client {
 	client := &Client{
 		conn:     conn,
 		protocol: protocol,
-		handlers: make(map[handlerKey][]func(*Client, Packet) error),
+		handlers: make(map[handlerKey][]packetHandler),
 		outbound: make(chan Packet, outboundBuffer),
 		done:     make(chan struct{}),
 	}
@@ -83,11 +85,9 @@ func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
 		id:    prototype.ID(),
 	}
 
-	wrapped := func(client *Client, packet Packet) error {
+	c.handlers[key] = append(c.handlers[key], func(client *Client, packet Packet) error {
 		return handler(client, packet.(P))
-	}
-
-	c.handlers[key] = append(c.handlers[key], wrapped)
+	})
 }
 
 func (c *Client) Run(parent context.Context) error {
