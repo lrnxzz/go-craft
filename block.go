@@ -1,6 +1,13 @@
 package gocraft
 
-import "fmt"
+import (
+	_ "embed"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strconv"
+	"sync"
+)
 
 type BlockState int32
 
@@ -84,4 +91,101 @@ func (c *PalettedContainer[T]) Decode(r *Reader) error {
 	}
 
 	return nil
+}
+
+//go:embed blocks.json
+var blocks []byte
+
+type Property struct {
+	Name   string
+	Values []string
+}
+
+func (p *Property) UnmarshalJSON(data []byte) error {
+	var raw propertyData
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	p.Name = raw.Name
+	switch raw.Type {
+	case "bool":
+		p.Values = []string{"true", "false"}
+	case "enum":
+		p.Values = raw.Values
+	default:
+		p.Values = make([]string, raw.NumValues)
+		for i := range p.Values {
+			p.Values[i] = strconv.Itoa(i)
+		}
+	}
+
+	return nil
+}
+
+type propertyData struct {
+	Name      string   `json:"name"`
+	Type      string   `json:"type"`
+	NumValues int      `json:"num_values"`
+	Values    []string `json:"values"`
+}
+
+type Block struct {
+	Name         Identifier `json:"name"`
+	MinState     BlockState `json:"minStateId"`
+	MaxState     BlockState `json:"maxStateId"`
+	DefaultState BlockState `json:"defaultState"`
+	Properties   []Property `json:"states"`
+}
+
+func (b Block) At(state BlockState) map[string]string {
+	values := make(map[string]string, len(b.Properties))
+
+	offset := int(state - b.MinState)
+	for i := len(b.Properties) - 1; i >= 0; i-- {
+		property := b.Properties[i]
+		values[property.Name] = property.Values[offset%len(property.Values)]
+		offset /= len(property.Values)
+	}
+
+	return values
+}
+
+var loadBlocks = sync.OnceValue(func() []Block {
+	var catalog []Block
+	if err := json.Unmarshal(blocks, &catalog); err != nil {
+		panic(fmt.Sprintf("gocraft: embedded block data is invalid: %v", err))
+	}
+
+	return catalog
+})
+
+var blocksByName = sync.OnceValue(func() map[Identifier]Block {
+	catalog := loadBlocks()
+
+	byName := make(map[Identifier]Block, len(catalog))
+	for _, block := range catalog {
+		byName[block.Name] = block
+	}
+
+	return byName
+})
+
+func BlockOf(state BlockState) (Block, bool) {
+	catalog := loadBlocks()
+
+	index := sort.Search(len(catalog), func(i int) bool {
+		return catalog[i].MaxState >= state
+	})
+	if index < len(catalog) && catalog[index].MinState <= state {
+		return catalog[index], true
+	}
+
+	return Block{}, false
+}
+
+func BlockNamed(name Identifier) (Block, bool) {
+	block, ok := blocksByName()[name]
+
+	return block, ok
 }
