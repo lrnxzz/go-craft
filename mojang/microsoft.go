@@ -33,7 +33,7 @@ type Microsoft struct {
 func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 	flow := m.Flow
 	if flow.DeviceCodeURL == "" {
-		flow = Live
+		flow = Live()
 	}
 
 	msa := NewMSA(m.ClientID)

@@ -26,7 +26,7 @@ func NewMSA(clientID string) *MSA {
 	return &MSA{
 		Client:   &fasthttp.Client{},
 		ClientID: clientID,
-		Flow:     Live,
+		Flow:     Live(),
 	}
 }
 

@@ -114,7 +114,7 @@ func NewXbox() *Xbox {
 		Client:      &fasthttp.Client{},
 		UserAuthURL: userAuthURL,
 		XSTSAuthURL: xstsAuthURL,
-		Preamble:    Live.XboxPreamble,
+		Preamble:    Live().XboxPreamble,
 	}
 }
 

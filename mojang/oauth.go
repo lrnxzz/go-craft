@@ -19,22 +19,24 @@ type Flow struct {
 	XboxPreamble  string
 }
 
-var (
-	Live = Flow{
+func Live() Flow {
+	return Flow{
 		DeviceCodeURL: "https://login.live.com/oauth20_connect.srf",
 		TokenURL:      "https://login.live.com/oauth20_token.srf",
 		Scope:         "service::user.auth.xboxlive.com::MBI_SSL",
 		ResponseType:  "device_code",
 		XboxPreamble:  "t=",
 	}
+}
 
-	Entra = Flow{
+func Entra() Flow {
+	return Flow{
 		DeviceCodeURL: "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode",
 		TokenURL:      "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
 		Scope:         "XboxLive.signin offline_access",
 		XboxPreamble:  "d=",
 	}
-)
+}
 
 type grantType string
 
