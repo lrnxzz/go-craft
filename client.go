@@ -9,32 +9,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const outboundBuffer = 256
-
-type handlerKey struct {
-	state State
-	id    int32
-}
-
-type packetHandler func(*Client, Packet) error
-
 type Client struct {
 	conn      *Conn
 	protocol  *Protocol
 	state     atomic.Uint32
-	handlers  map[handlerKey][]packetHandler
-	outbound  chan Packet
+	listeners listeners
+	writer    *writer
 	done      chan struct{}
 	closeOnce sync.Once
 }
 
 func NewClient(conn *Conn, protocol *Protocol) *Client {
 	client := &Client{
-		conn:     conn,
-		protocol: protocol,
-		handlers: make(map[handlerKey][]packetHandler),
-		outbound: make(chan Packet, outboundBuffer),
-		done:     make(chan struct{}),
+		conn:      conn,
+		protocol:  protocol,
+		listeners: make(listeners),
+		writer:    newWriter(conn),
+		done:      make(chan struct{}),
 	}
 
 	return client
@@ -50,7 +41,7 @@ func (c *Client) SetState(state State) {
 
 func (c *Client) Send(packet Packet) error {
 	select {
-	case c.outbound <- packet:
+	case c.writer.outbound <- packet:
 		return nil
 	case <-c.done:
 		return fmt.Errorf("gocraft: send on a closed client")
@@ -85,7 +76,7 @@ func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
 		id:    prototype.ID(),
 	}
 
-	c.handlers[key] = append(c.handlers[key], func(client *Client, packet Packet) error {
+	c.listeners.add(key, func(client *Client, packet Packet) error {
 		return handler(client, packet.(P))
 	})
 }
@@ -109,7 +100,7 @@ func (c *Client) Run(parent context.Context) error {
 	group.Go(func() error {
 		defer cancel()
 
-		return c.writeLoop(ctx)
+		return c.writer.loop(ctx)
 	})
 
 	return group.Wait()
@@ -128,26 +119,15 @@ func (c *Client) readLoop(ctx context.Context) error {
 	}
 }
 
-func (c *Client) writeLoop(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case packet := <-c.outbound:
-			if err := c.conn.WriteFrame(EncodeFrame(packet)); err != nil {
-				return err
-			}
-		}
-	}
-}
-
 func (c *Client) receive(frame Frame) error {
-	packet, known, err := c.protocol.Decode(c.State(), Clientbound, frame)
+	state := c.State()
+
+	packet, known, err := c.protocol.Decode(state, Clientbound, frame)
 	if err != nil || !known {
 		return err
 	}
 
-	return c.dispatch(packet)
+	return c.listeners.dispatch(c, state, packet)
 }
 
 func (c *Client) exit(ctx context.Context, readErr error) error {
@@ -159,19 +139,4 @@ func (c *Client) exit(ctx context.Context, readErr error) error {
 	default:
 		return readErr
 	}
-}
-
-func (c *Client) dispatch(packet Packet) error {
-	key := handlerKey{
-		state: c.State(),
-		id:    packet.ID(),
-	}
-
-	for _, handler := range c.handlers[key] {
-		if err := handler(c, packet); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
