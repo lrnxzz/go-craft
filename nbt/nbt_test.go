@@ -8,7 +8,7 @@ import (
 	"github.com/lrnxzz/go-craft/nbt"
 )
 
-func _richTree() nbt.Compound {
+func richTree() nbt.Compound {
 	return nbt.Compound{
 		"byte":   nbt.Byte(-128),
 		"short":  nbt.Short(math.MinInt16),
@@ -43,7 +43,7 @@ func _richTree() nbt.Compound {
 }
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
-	original := _richTree()
+	original := richTree()
 
 	decoded, err := nbt.Decode(nbt.Encode(original))
 	if err != nil {

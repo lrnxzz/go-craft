@@ -5,22 +5,22 @@ import (
 	"unicode/utf16"
 )
 
-func _encodeMUTF8(dst []byte, s string) []byte {
+func encodeMUTF8(dst []byte, s string) []byte {
 	for _, r := range s {
 		if r > 0xFFFF {
 			high, low := utf16.EncodeRune(r)
-			dst = _encodeUnit(dst, uint16(high))
-			dst = _encodeUnit(dst, uint16(low))
+			dst = encodeUnit(dst, uint16(high))
+			dst = encodeUnit(dst, uint16(low))
 			continue
 		}
 
-		dst = _encodeUnit(dst, uint16(r))
+		dst = encodeUnit(dst, uint16(r))
 	}
 
 	return dst
 }
 
-func _encodeUnit(dst []byte, unit uint16) []byte {
+func encodeUnit(dst []byte, unit uint16) []byte {
 	switch {
 	case unit >= 0x0001 && unit <= 0x007F:
 		return append(dst, byte(unit))
@@ -31,7 +31,7 @@ func _encodeUnit(dst []byte, unit uint16) []byte {
 	}
 }
 
-func _decodeMUTF8(raw []byte) (string, error) {
+func decodeMUTF8(raw []byte) (string, error) {
 	units := make([]uint16, 0, len(raw))
 
 	for i := 0; i < len(raw); {

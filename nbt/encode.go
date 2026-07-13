@@ -8,17 +8,17 @@ import (
 func Encode(root Compound) []byte {
 	buf := []byte{byte(TagCompound)}
 
-	return _encodePayload(buf, root)
+	return encodePayload(buf, root)
 }
 
 func EncodeNamed(name string, root Compound) []byte {
 	buf := []byte{byte(TagCompound)}
-	buf = _encodeString(buf, name)
+	buf = encodeString(buf, name)
 
-	return _encodePayload(buf, root)
+	return encodePayload(buf, root)
 }
 
-func _encodePayload(buf []byte, tag Tag) []byte {
+func encodePayload(buf []byte, tag Tag) []byte {
 	switch value := tag.(type) {
 	case Byte:
 		return append(buf, byte(value))
@@ -36,11 +36,11 @@ func _encodePayload(buf []byte, tag Tag) []byte {
 		buf = binary.BigEndian.AppendUint32(buf, uint32(len(value)))
 		return append(buf, value...)
 	case String:
-		return _encodeString(buf, string(value))
+		return encodeString(buf, string(value))
 	case List:
-		return _encodeList(buf, value)
+		return encodeList(buf, value)
 	case Compound:
-		return _encodeCompound(buf, value)
+		return encodeCompound(buf, value)
 	case IntArray:
 		buf = binary.BigEndian.AppendUint32(buf, uint32(len(value)))
 		for _, element := range value {
@@ -58,7 +58,7 @@ func _encodePayload(buf []byte, tag Tag) []byte {
 	return buf
 }
 
-func _encodeList(buf []byte, list List) []byte {
+func encodeList(buf []byte, list List) []byte {
 	elem := list.Elem
 	if elem == TagEnd && len(list.Items) > 0 {
 		elem = list.Items[0].Type()
@@ -68,26 +68,26 @@ func _encodeList(buf []byte, list List) []byte {
 	buf = binary.BigEndian.AppendUint32(buf, uint32(len(list.Items)))
 
 	for _, item := range list.Items {
-		buf = _encodePayload(buf, item)
+		buf = encodePayload(buf, item)
 	}
 
 	return buf
 }
 
-func _encodeCompound(buf []byte, compound Compound) []byte {
+func encodeCompound(buf []byte, compound Compound) []byte {
 	for name, value := range compound {
 		buf = append(buf, byte(value.Type()))
-		buf = _encodeString(buf, name)
-		buf = _encodePayload(buf, value)
+		buf = encodeString(buf, name)
+		buf = encodePayload(buf, value)
 	}
 
 	return append(buf, byte(TagEnd))
 }
 
-func _encodeString(buf []byte, s string) []byte {
+func encodeString(buf []byte, s string) []byte {
 	start := len(buf)
 	buf = append(buf, 0, 0)
-	buf = _encodeMUTF8(buf, s)
+	buf = encodeMUTF8(buf, s)
 
 	binary.BigEndian.PutUint16(buf[start:], uint16(len(buf)-start-2))
 

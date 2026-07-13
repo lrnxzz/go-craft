@@ -48,14 +48,14 @@ func Unmarshal(payload []byte, fields ...FieldPtr) error {
 	return DecodeAll(NewReader(payload), fields...)
 }
 
-func _appendBE[T constraints.Unsigned](dst []byte, v T) []byte {
+func appendBE[T constraints.Unsigned](dst []byte, v T) []byte {
 	for shift := (int(unsafe.Sizeof(v)) - 1) * bitsPerByte; shift >= 0; shift -= bitsPerByte {
 		dst = append(dst, byte(v>>shift))
 	}
 	return dst
 }
 
-func _readBE[T constraints.Unsigned](r *Reader) (T, error) {
+func readBE[T constraints.Unsigned](r *Reader) (T, error) {
 	raw := r.take(int(unsafe.Sizeof(T(0))))
 	if raw == nil {
 		return 0, r.err
@@ -88,11 +88,11 @@ func (v Bool) Append(dst []byte) []byte {
 	if v {
 		raw = 1
 	}
-	return _appendBE(dst, raw)
+	return appendBE(dst, raw)
 }
 
 func (v *Bool) Decode(r *Reader) error {
-	raw, err := _readBE[uint8](r)
+	raw, err := readBE[uint8](r)
 	if err != nil {
 		return err
 	}
@@ -101,11 +101,11 @@ func (v *Bool) Decode(r *Reader) error {
 }
 
 func (v Byte) Append(dst []byte) []byte {
-	return _appendBE(dst, uint8(v))
+	return appendBE(dst, uint8(v))
 }
 
 func (v *Byte) Decode(r *Reader) error {
-	raw, err := _readBE[uint8](r)
+	raw, err := readBE[uint8](r)
 	if err != nil {
 		return err
 	}
@@ -114,11 +114,11 @@ func (v *Byte) Decode(r *Reader) error {
 }
 
 func (v UByte) Append(dst []byte) []byte {
-	return _appendBE(dst, uint8(v))
+	return appendBE(dst, uint8(v))
 }
 
 func (v *UByte) Decode(r *Reader) error {
-	raw, err := _readBE[uint8](r)
+	raw, err := readBE[uint8](r)
 	if err != nil {
 		return err
 	}
@@ -127,11 +127,11 @@ func (v *UByte) Decode(r *Reader) error {
 }
 
 func (v Short) Append(dst []byte) []byte {
-	return _appendBE(dst, uint16(v))
+	return appendBE(dst, uint16(v))
 }
 
 func (v *Short) Decode(r *Reader) error {
-	raw, err := _readBE[uint16](r)
+	raw, err := readBE[uint16](r)
 	if err != nil {
 		return err
 	}
@@ -140,11 +140,11 @@ func (v *Short) Decode(r *Reader) error {
 }
 
 func (v UShort) Append(dst []byte) []byte {
-	return _appendBE(dst, uint16(v))
+	return appendBE(dst, uint16(v))
 }
 
 func (v *UShort) Decode(r *Reader) error {
-	raw, err := _readBE[uint16](r)
+	raw, err := readBE[uint16](r)
 	if err != nil {
 		return err
 	}
@@ -153,11 +153,11 @@ func (v *UShort) Decode(r *Reader) error {
 }
 
 func (v Int) Append(dst []byte) []byte {
-	return _appendBE(dst, uint32(v))
+	return appendBE(dst, uint32(v))
 }
 
 func (v *Int) Decode(r *Reader) error {
-	raw, err := _readBE[uint32](r)
+	raw, err := readBE[uint32](r)
 	if err != nil {
 		return err
 	}
@@ -166,11 +166,11 @@ func (v *Int) Decode(r *Reader) error {
 }
 
 func (v Long) Append(dst []byte) []byte {
-	return _appendBE(dst, uint64(v))
+	return appendBE(dst, uint64(v))
 }
 
 func (v *Long) Decode(r *Reader) error {
-	raw, err := _readBE[uint64](r)
+	raw, err := readBE[uint64](r)
 	if err != nil {
 		return err
 	}
@@ -179,11 +179,11 @@ func (v *Long) Decode(r *Reader) error {
 }
 
 func (v Float) Append(dst []byte) []byte {
-	return _appendBE(dst, math.Float32bits(float32(v)))
+	return appendBE(dst, math.Float32bits(float32(v)))
 }
 
 func (v *Float) Decode(r *Reader) error {
-	raw, err := _readBE[uint32](r)
+	raw, err := readBE[uint32](r)
 	if err != nil {
 		return err
 	}
@@ -192,11 +192,11 @@ func (v *Float) Decode(r *Reader) error {
 }
 
 func (v Double) Append(dst []byte) []byte {
-	return _appendBE(dst, math.Float64bits(float64(v)))
+	return appendBE(dst, math.Float64bits(float64(v)))
 }
 
 func (v *Double) Decode(r *Reader) error {
-	raw, err := _readBE[uint64](r)
+	raw, err := readBE[uint64](r)
 	if err != nil {
 		return err
 	}
@@ -340,37 +340,3 @@ func (o *Option[T]) Decode(r *Reader) error {
 	}
 	return ptr.Decode(r)
 }
-
-var (
-	_ Field = Bool(false)
-	_ Field = Byte(0)
-	_ Field = UByte(0)
-	_ Field = Short(0)
-	_ Field = UShort(0)
-	_ Field = Int(0)
-	_ Field = Long(0)
-	_ Field = Float(0)
-	_ Field = Double(0)
-	_ Field = VarInt(0)
-	_ Field = VarLong(0)
-	_ Field = String("")
-	_ Field = UUID{}
-	_ Field = Slice[VarInt](nil)
-	_ Field = Option[VarInt]{}
-
-	_ FieldPtr = (*Bool)(nil)
-	_ FieldPtr = (*Byte)(nil)
-	_ FieldPtr = (*UByte)(nil)
-	_ FieldPtr = (*Short)(nil)
-	_ FieldPtr = (*UShort)(nil)
-	_ FieldPtr = (*Int)(nil)
-	_ FieldPtr = (*Long)(nil)
-	_ FieldPtr = (*Float)(nil)
-	_ FieldPtr = (*Double)(nil)
-	_ FieldPtr = (*VarInt)(nil)
-	_ FieldPtr = (*VarLong)(nil)
-	_ FieldPtr = (*String)(nil)
-	_ FieldPtr = (*UUID)(nil)
-	_ FieldPtr = (*Slice[VarInt])(nil)
-	_ FieldPtr = (*Option[VarInt])(nil)
-)

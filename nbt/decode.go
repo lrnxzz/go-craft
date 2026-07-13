@@ -27,7 +27,7 @@ func Decode(data []byte) (Compound, error) {
 func DecodePrefix(data []byte) (Compound, int, error) {
 	dec := &decoder{buf: data}
 
-	root := dec._byte()
+	root := dec.u8()
 	if dec.err != nil {
 		return nil, 0, dec.err
 	}
@@ -35,7 +35,7 @@ func DecodePrefix(data []byte) (Compound, int, error) {
 		return nil, 0, fmt.Errorf("nbt: root tag is %d, want compound", root)
 	}
 
-	compound := dec._compound()
+	compound := dec.compound()
 	if dec.err != nil {
 		return nil, 0, dec.err
 	}
@@ -46,7 +46,7 @@ func DecodePrefix(data []byte) (Compound, int, error) {
 func DecodeNamed(data []byte) (string, Compound, error) {
 	dec := &decoder{buf: data}
 
-	root := dec._byte()
+	root := dec.u8()
 	if dec.err != nil {
 		return "", nil, dec.err
 	}
@@ -54,8 +54,8 @@ func DecodeNamed(data []byte) (string, Compound, error) {
 		return "", nil, fmt.Errorf("nbt: root tag is %d, want compound", root)
 	}
 
-	name := dec._string()
-	compound := dec._compound()
+	name := dec.str()
+	compound := dec.compound()
 	if dec.err != nil {
 		return "", nil, dec.err
 	}
@@ -63,32 +63,32 @@ func DecodeNamed(data []byte) (string, Compound, error) {
 	return name, compound, nil
 }
 
-func (d *decoder) _enter() bool {
+func (d *decoder) enter() bool {
 	d.depth++
 	if d.depth > maxDepth {
-		d._fail(fmt.Errorf("nbt: nesting exceeds %d", maxDepth))
+		d.fail(fmt.Errorf("nbt: nesting exceeds %d", maxDepth))
 		return false
 	}
 
 	return true
 }
 
-func (d *decoder) _leave() {
+func (d *decoder) leave() {
 	d.depth--
 }
 
-func (d *decoder) _fail(err error) {
+func (d *decoder) fail(err error) {
 	if d.err == nil {
 		d.err = err
 	}
 }
 
-func (d *decoder) _take(n int) []byte {
+func (d *decoder) take(n int) []byte {
 	if d.err != nil {
 		return nil
 	}
 	if n < 0 || n > len(d.buf)-d.off {
-		d._fail(fmt.Errorf("nbt: payload needs %d bytes, has %d", n, len(d.buf)-d.off))
+		d.fail(fmt.Errorf("nbt: payload needs %d bytes, has %d", n, len(d.buf)-d.off))
 		return nil
 	}
 
@@ -98,8 +98,8 @@ func (d *decoder) _take(n int) []byte {
 	return view
 }
 
-func (d *decoder) _byte() byte {
-	raw := d._take(1)
+func (d *decoder) u8() byte {
+	raw := d.take(1)
 	if raw == nil {
 		return 0
 	}
@@ -107,8 +107,8 @@ func (d *decoder) _byte() byte {
 	return raw[0]
 }
 
-func (d *decoder) _u16() uint16 {
-	raw := d._take(2)
+func (d *decoder) u16() uint16 {
+	raw := d.take(2)
 	if raw == nil {
 		return 0
 	}
@@ -116,8 +116,8 @@ func (d *decoder) _u16() uint16 {
 	return binary.BigEndian.Uint16(raw)
 }
 
-func (d *decoder) _u32() uint32 {
-	raw := d._take(4)
+func (d *decoder) u32() uint32 {
+	raw := d.take(4)
 	if raw == nil {
 		return 0
 	}
@@ -125,8 +125,8 @@ func (d *decoder) _u32() uint32 {
 	return binary.BigEndian.Uint32(raw)
 }
 
-func (d *decoder) _u64() uint64 {
-	raw := d._take(8)
+func (d *decoder) u64() uint64 {
+	raw := d.take(8)
 	if raw == nil {
 		return 0
 	}
@@ -134,62 +134,62 @@ func (d *decoder) _u64() uint64 {
 	return binary.BigEndian.Uint64(raw)
 }
 
-func (d *decoder) _length() int {
-	n := int32(d._u32())
+func (d *decoder) length() int {
+	n := int32(d.u32())
 	if n < 0 {
-		d._fail(fmt.Errorf("nbt: negative length %d", n))
+		d.fail(fmt.Errorf("nbt: negative length %d", n))
 		return 0
 	}
 
 	return int(n)
 }
 
-func (d *decoder) _string() string {
-	raw := d._take(int(d._u16()))
+func (d *decoder) str() string {
+	raw := d.take(int(d.u16()))
 	if raw == nil {
 		return ""
 	}
 
-	decoded, err := _decodeMUTF8(raw)
+	decoded, err := decodeMUTF8(raw)
 	if err != nil {
-		d._fail(err)
+		d.fail(err)
 		return ""
 	}
 
 	return decoded
 }
 
-func (d *decoder) _compound() Compound {
-	if !d._enter() {
+func (d *decoder) compound() Compound {
+	if !d.enter() {
 		return nil
 	}
-	defer d._leave()
+	defer d.leave()
 
 	compound := Compound{}
 
 	for {
-		tag := TagType(d._byte())
+		tag := TagType(d.u8())
 		if d.err != nil || tag == TagEnd {
 			return compound
 		}
 
-		name := d._string()
-		compound[name] = d._payload(tag)
+		name := d.str()
+		compound[name] = d.payload(tag)
 	}
 }
 
-func (d *decoder) _list() List {
-	if !d._enter() {
+func (d *decoder) list() List {
+	if !d.enter() {
 		return List{}
 	}
-	defer d._leave()
+	defer d.leave()
 
-	elem := TagType(d._byte())
-	n := d._length()
+	elem := TagType(d.u8())
+	n := d.length()
 
 	items := make([]Tag, 0, min(n, maxPrealloc))
 	for range n {
-		items = append(items, d._payload(elem))
+		items = append(items, d.payload(elem))
 		if d.err != nil {
 			break
 		}
@@ -198,45 +198,45 @@ func (d *decoder) _list() List {
 	return List{Elem: elem, Items: items}
 }
 
-func (d *decoder) _payload(tag TagType) Tag {
+func (d *decoder) payload(tag TagType) Tag {
 	switch tag {
 	case TagByte:
-		return Byte(d._byte())
+		return Byte(d.u8())
 	case TagShort:
-		return Short(d._u16())
+		return Short(d.u16())
 	case TagInt:
-		return Int(d._u32())
+		return Int(d.u32())
 	case TagLong:
-		return Long(d._u64())
+		return Long(d.u64())
 	case TagFloat:
-		return Float(math.Float32frombits(d._u32()))
+		return Float(math.Float32frombits(d.u32()))
 	case TagDouble:
-		return Double(math.Float64frombits(d._u64()))
+		return Double(math.Float64frombits(d.u64()))
 	case TagByteArray:
-		return ByteArray(append([]byte(nil), d._take(d._length())...))
+		return ByteArray(append([]byte(nil), d.take(d.length())...))
 	case TagString:
-		return String(d._string())
+		return String(d.str())
 	case TagList:
-		return d._list()
+		return d.list()
 	case TagCompound:
-		return d._compound()
+		return d.compound()
 	case TagIntArray:
-		return d._intArray()
+		return d.intArray()
 	case TagLongArray:
-		return d._longArray()
+		return d.longArray()
 	}
 
-	d._fail(fmt.Errorf("nbt: unknown tag %d", tag))
+	d.fail(fmt.Errorf("nbt: unknown tag %d", tag))
 
 	return nil
 }
 
-func (d *decoder) _intArray() IntArray {
-	n := d._length()
+func (d *decoder) intArray() IntArray {
+	n := d.length()
 
 	array := make(IntArray, 0, min(n, maxPrealloc))
 	for range n {
-		array = append(array, int32(d._u32()))
+		array = append(array, int32(d.u32()))
 		if d.err != nil {
 			break
 		}
@@ -245,12 +245,12 @@ func (d *decoder) _intArray() IntArray {
 	return array
 }
 
-func (d *decoder) _longArray() LongArray {
-	n := d._length()
+func (d *decoder) longArray() LongArray {
+	n := d.length()
 
 	array := make(LongArray, 0, min(n, maxPrealloc))
 	for range n {
-		array = append(array, int64(d._u64()))
+		array = append(array, int64(d.u64()))
 		if d.err != nil {
 			break
 		}

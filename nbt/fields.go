@@ -19,24 +19,24 @@ var (
 	_fieldMapCache sync.Map
 )
 
-func _fieldsOf(t reflect.Type) []field {
+func fieldsOf(t reflect.Type) []field {
 	if cached, ok := _fieldCache.Load(t); ok {
 		return cached.([]field)
 	}
 
-	fields := _collectFields(t, nil)
+	fields := collectFields(t, nil)
 	_fieldCache.Store(t, fields)
 
 	return fields
 }
 
-func _fieldMapOf(t reflect.Type) map[string]field {
+func fieldMapOf(t reflect.Type) map[string]field {
 	if cached, ok := _fieldMapCache.Load(t); ok {
 		return cached.(map[string]field)
 	}
 
 	byName := make(map[string]field, t.NumField())
-	for _, f := range _fieldsOf(t) {
+	for _, f := range fieldsOf(t) {
 		byName[f.name] = f
 	}
 	_fieldMapCache.Store(t, byName)
@@ -44,7 +44,7 @@ func _fieldMapOf(t reflect.Type) map[string]field {
 	return byName
 }
 
-func _collectFields(t reflect.Type, prefix []int) []field {
+func collectFields(t reflect.Type, prefix []int) []field {
 	var fields []field
 
 	for i := range t.NumField() {
@@ -55,7 +55,7 @@ func _collectFields(t reflect.Type, prefix []int) []field {
 			continue
 		}
 
-		promoted := structField.Anonymous && !tagged && _structType(structField.Type).Kind() == reflect.Struct
+		promoted := structField.Anonymous && !tagged && structType(structField.Type).Kind() == reflect.Struct
 		if !structField.IsExported() && !promoted {
 			continue
 		}
@@ -63,7 +63,7 @@ func _collectFields(t reflect.Type, prefix []int) []field {
 		index := append(slices.Clone(prefix), i)
 
 		if promoted {
-			fields = append(fields, _collectFields(_structType(structField.Type), index)...)
+			fields = append(fields, collectFields(structType(structField.Type), index)...)
 			continue
 		}
 
@@ -81,10 +81,10 @@ func _collectFields(t reflect.Type, prefix []int) []field {
 		})
 	}
 
-	return _resolveShadows(fields)
+	return resolveShadows(fields)
 }
 
-func _resolveShadows(fields []field) []field {
+func resolveShadows(fields []field) []field {
 	depth := make(map[string]int, len(fields))
 	for _, f := range fields {
 		if current, ok := depth[f.name]; !ok || len(f.index) < current {
@@ -102,7 +102,7 @@ func _resolveShadows(fields []field) []field {
 	return resolved
 }
 
-func _structType(t reflect.Type) reflect.Type {
+func structType(t reflect.Type) reflect.Type {
 	if t.Kind() == reflect.Pointer {
 		return t.Elem()
 	}
@@ -110,7 +110,7 @@ func _structType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func _fieldValue(v reflect.Value, index []int) reflect.Value {
+func fieldValue(v reflect.Value, index []int) reflect.Value {
 	for _, i := range index {
 		if v.Kind() == reflect.Pointer {
 			if v.IsNil() {
@@ -124,7 +124,7 @@ func _fieldValue(v reflect.Value, index []int) reflect.Value {
 	return v
 }
 
-func _fieldTarget(v reflect.Value, index []int) reflect.Value {
+func fieldTarget(v reflect.Value, index []int) reflect.Value {
 	for _, i := range index {
 		if v.Kind() == reflect.Pointer {
 			if v.IsNil() {
@@ -138,7 +138,7 @@ func _fieldTarget(v reflect.Value, index []int) reflect.Value {
 	return v
 }
 
-func _deref(v reflect.Value) reflect.Value {
+func deref(v reflect.Value) reflect.Value {
 	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			return v

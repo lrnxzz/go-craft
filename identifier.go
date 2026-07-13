@@ -1,9 +1,6 @@
 package gocraft
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 const DefaultNamespace = "minecraft"
 
@@ -50,14 +47,14 @@ func (i Identifier) Valid() bool {
 		return false
 	}
 
-	return _validSegment(namespace, _validNamespaceByte) && _validSegment(path, _validPathByte)
+	return validSegment(namespace, validNamespaceByte) && validSegment(path, validPathByte)
 }
 
 func (i Identifier) String() string {
 	return i.Namespace() + ":" + i.Path()
 }
 
-func _validSegment(segment string, allow func(byte) bool) bool {
+func validSegment(segment string, allow func(byte) bool) bool {
 	if segment == "" {
 		return false
 	}
@@ -71,16 +68,10 @@ func _validSegment(segment string, allow func(byte) bool) bool {
 	return true
 }
 
-func _validNamespaceByte(b byte) bool {
+func validNamespaceByte(b byte) bool {
 	return b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_' || b == '-' || b == '.'
 }
 
-func _validPathByte(b byte) bool {
-	return _validNamespaceByte(b) || b == '/'
+func validPathByte(b byte) bool {
+	return validNamespaceByte(b) || b == '/'
 }
-
-var (
-	_ Field        = Identifier("")
-	_ FieldPtr     = (*Identifier)(nil)
-	_ fmt.Stringer = Identifier("")
-)

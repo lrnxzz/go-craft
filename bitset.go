@@ -139,9 +139,3 @@ func DecodeFixedBitSet(r *Reader, bitCount int) (FixedBitSet, error) {
 
 	return FixedBitSet(append([]byte(nil), raw...)), nil
 }
-
-var (
-	_ Field    = BitSet(nil)
-	_ FieldPtr = (*BitSet)(nil)
-	_ Field    = FixedBitSet(nil)
-)

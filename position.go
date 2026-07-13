@@ -70,10 +70,3 @@ func AngleFromDegrees(degrees float64) Angle {
 func AngleFromRadians(radians float64) Angle {
 	return Angle(int64(math.Round(radians / (2 * math.Pi) * 256)))
 }
-
-var (
-	_ Field    = Position{}
-	_ FieldPtr = (*Position)(nil)
-	_ Field    = Angle(0)
-	_ FieldPtr = (*Angle)(nil)
-)

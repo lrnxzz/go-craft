@@ -51,10 +51,10 @@ type chatComponent struct {
 }
 
 func (s Status) MOTD() string {
-	return _flattenChat(s.Description)
+	return flattenChat(s.Description)
 }
 
-func _flattenChat(raw json.RawMessage) string {
+func flattenChat(raw json.RawMessage) string {
 	var text string
 	if json.Unmarshal(raw, &text) == nil {
 		return text
@@ -69,14 +69,14 @@ func _flattenChat(raw json.RawMessage) string {
 
 	flattened.WriteString(component.Text)
 	for _, extra := range component.Extra {
-		flattened.WriteString(_flattenChat(extra))
+		flattened.WriteString(flattenChat(extra))
 	}
 
 	return flattened.String()
 }
 
 func Ping(ctx context.Context, address string) (Status, error) {
-	host, port, err := _splitAddress(address)
+	host, port, err := splitAddress(address)
 	if err != nil {
 		return Status{}, err
 	}
@@ -129,7 +129,7 @@ func Ping(ctx context.Context, address string) (Status, error) {
 		return Status{}, fmt.Errorf("gocraft: malformed status response: %w", err)
 	}
 
-	latency, err := _measureLatency(conn)
+	latency, err := measureLatency(conn)
 	if err != nil {
 		return Status{}, err
 	}
@@ -139,7 +139,7 @@ func Ping(ctx context.Context, address string) (Status, error) {
 	return status, nil
 }
 
-func _measureLatency(conn *Conn) (time.Duration, error) {
+func measureLatency(conn *Conn) (time.Duration, error) {
 	nonce := Long(time.Now().UnixMilli())
 	start := time.Now()
 
@@ -169,7 +169,7 @@ func _measureLatency(conn *Conn) (time.Duration, error) {
 	return latency, nil
 }
 
-func _splitAddress(address string) (String, UShort, error) {
+func splitAddress(address string) (String, UShort, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return String(address), defaultPort, nil

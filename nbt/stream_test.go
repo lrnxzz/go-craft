@@ -10,7 +10,7 @@ import (
 )
 
 func TestStreamRoundTrip(t *testing.T) {
-	original := _richTree()
+	original := richTree()
 
 	var buf bytes.Buffer
 	if err := nbt.Write(&buf, original); err != nil {

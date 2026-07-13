@@ -39,7 +39,7 @@ func TestDecodeRejectsDeeplyNestedInput(t *testing.T) {
 }
 
 func TestDecodeNeverPanicsOnTruncatedInput(t *testing.T) {
-	full := nbt.Encode(_richTree())
+	full := nbt.Encode(richTree())
 
 	for cut := range len(full) {
 		func() {

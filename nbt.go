@@ -23,8 +23,3 @@ func (n *NBT) Decode(r *Reader) error {
 
 	return nil
 }
-
-var (
-	_ Field    = NBT(nil)
-	_ FieldPtr = (*NBT)(nil)
-)

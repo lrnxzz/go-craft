@@ -10,7 +10,7 @@ import (
 	gocraft "github.com/lrnxzz/go-craft"
 )
 
-func _serveStatus(listener net.Listener, response gocraft.String) {
+func serveStatus(listener net.Listener, response gocraft.String) {
 	transport, err := listener.Accept()
 	if err != nil {
 		return
@@ -59,7 +59,7 @@ func TestPing(t *testing.T) {
 		"description": {"text": "go-craft ", "extra": [{"text": "test"}]}
 	}`)
 
-	go _serveStatus(listener, response)
+	go serveStatus(listener, response)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
