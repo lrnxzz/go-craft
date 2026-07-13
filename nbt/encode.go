@@ -1,0 +1,84 @@
+package nbt
+
+import (
+	"encoding/binary"
+	"math"
+)
+
+func Encode(root Compound) []byte {
+	buf := []byte{byte(TagCompound)}
+
+	return _encodePayload(buf, root)
+}
+
+func _encodePayload(buf []byte, tag Tag) []byte {
+	switch value := tag.(type) {
+	case Byte:
+		return append(buf, byte(value))
+	case Short:
+		return binary.BigEndian.AppendUint16(buf, uint16(value))
+	case Int:
+		return binary.BigEndian.AppendUint32(buf, uint32(value))
+	case Long:
+		return binary.BigEndian.AppendUint64(buf, uint64(value))
+	case Float:
+		return binary.BigEndian.AppendUint32(buf, math.Float32bits(float32(value)))
+	case Double:
+		return binary.BigEndian.AppendUint64(buf, math.Float64bits(float64(value)))
+	case ByteArray:
+		buf = binary.BigEndian.AppendUint32(buf, uint32(len(value)))
+		return append(buf, value...)
+	case String:
+		return _encodeString(buf, string(value))
+	case List:
+		return _encodeList(buf, value)
+	case Compound:
+		return _encodeCompound(buf, value)
+	case IntArray:
+		buf = binary.BigEndian.AppendUint32(buf, uint32(len(value)))
+		for _, element := range value {
+			buf = binary.BigEndian.AppendUint32(buf, uint32(element))
+		}
+		return buf
+	case LongArray:
+		buf = binary.BigEndian.AppendUint32(buf, uint32(len(value)))
+		for _, element := range value {
+			buf = binary.BigEndian.AppendUint64(buf, uint64(element))
+		}
+		return buf
+	}
+
+	return buf
+}
+
+func _encodeList(buf []byte, list List) []byte {
+	elem := list.Elem
+	if elem == TagEnd && len(list.Items) > 0 {
+		elem = list.Items[0].Type()
+	}
+
+	buf = append(buf, byte(elem))
+	buf = binary.BigEndian.AppendUint32(buf, uint32(len(list.Items)))
+
+	for _, item := range list.Items {
+		buf = _encodePayload(buf, item)
+	}
+
+	return buf
+}
+
+func _encodeCompound(buf []byte, compound Compound) []byte {
+	for name, value := range compound {
+		buf = append(buf, byte(value.Type()))
+		buf = _encodeString(buf, name)
+		buf = _encodePayload(buf, value)
+	}
+
+	return append(buf, byte(TagEnd))
+}
+
+func _encodeString(buf []byte, s string) []byte {
+	buf = binary.BigEndian.AppendUint16(buf, uint16(len(s)))
+
+	return append(buf, s...)
+}
