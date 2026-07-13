@@ -28,5 +28,13 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[RegistryData](proto, gocraft.StateConfiguration, gocraft.Clientbound)
 	gocraft.Bind[FeatureFlags](proto, gocraft.StateConfiguration, gocraft.Clientbound)
 
+	gocraft.Bind[ConfirmTeleport](proto, gocraft.StatePlay, gocraft.Serverbound)
+	gocraft.Bind[PlayKeepAliveResponse](proto, gocraft.StatePlay, gocraft.Serverbound)
+
+	gocraft.Bind[JoinGame](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[PlayKeepAlive](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[SyncPlayerPosition](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[PlayDisconnect](proto, gocraft.StatePlay, gocraft.Clientbound)
+
 	return proto
 }
