@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"time"
@@ -23,30 +23,23 @@ func joinCommand() *cobra.Command {
 		Short: "Connect a bot to a server and disconnect once it spawns",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			host := args[0]
-			port := uint16(25565)
-			if h, p, err := net.SplitHostPort(args[0]); err == nil {
-				host = h
-				if parsed, err := strconv.ParseUint(p, 10, 16); err == nil {
-					port = uint16(parsed)
-				}
-			}
+			host, port := resolveAddress(args[0])
+			address := net.JoinHostPort(host, strconv.Itoa(int(port)))
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 			defer cancel()
 
-			conn, err := gocraft.Dial(ctx, net.JoinHostPort(host, strconv.Itoa(int(port))))
+			conn, err := gocraft.Dial(ctx, address)
 			if err != nil {
 				return err
 			}
 
 			client := gocraft.NewClient(conn, v765.Protocol())
 
-			fmt.Fprintf(cmd.OutOrStdout(), "connecting to %s:%d as %s...\n", host, port, username)
+			slog.Info("connecting", "server", address, "as", username)
 
 			ready := func(c *gocraft.Client, join *v765.JoinGame) error {
-				fmt.Fprintf(cmd.OutOrStdout(), "joined! entity %d, dimension %s, gamemode %d — disconnecting\n",
-					join.EntityID, join.DimensionName, join.GameMode)
+				slog.Info("joined", "entity", join.EntityID, "dimension", join.DimensionName)
 
 				return c.Close()
 			}
@@ -59,7 +52,7 @@ func joinCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "disconnected cleanly")
+			slog.Info("disconnected")
 
 			return nil
 		},
@@ -69,4 +62,18 @@ func joinCommand() *cobra.Command {
 	command.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "connection timeout")
 
 	return command
+}
+
+func resolveAddress(arg string) (string, uint16) {
+	host, port, err := net.SplitHostPort(arg)
+	if err != nil {
+		return arg, 25565
+	}
+
+	parsed, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return host, 25565
+	}
+
+	return host, uint16(parsed)
 }

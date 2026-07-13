@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/lrnxzz/go-craft/mojang"
@@ -18,13 +19,13 @@ func loginCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if clientID == "" {
-				return fmt.Errorf("a Microsoft application client id is required (--client-id or GOCRAFT_CLIENT_ID)")
+				return fmt.Errorf("gocraft: a Microsoft client id is required (--client-id or GOCRAFT_CLIENT_ID)")
 			}
 
 			provider := mojang.Microsoft{
 				ClientID: clientID,
 				Prompt: func(code mojang.DeviceCode) {
-					fmt.Fprintf(os.Stderr, "visit %s and enter code %s\n", code.VerificationURI, code.UserCode)
+					slog.Info("authorize", "url", code.VerificationURI, "code", code.UserCode)
 				},
 			}
 
@@ -33,7 +34,7 @@ func loginCommand() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "logged in as %s (%s)\n", session.Profile.Name, session.Profile.ID)
+			slog.Info("logged in", "name", session.Profile.Name, "id", session.Profile.ID)
 
 			encoder := json.NewEncoder(os.Stdout)
 			encoder.SetIndent("", "  ")
