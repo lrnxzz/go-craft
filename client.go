@@ -38,6 +38,10 @@ func (c *Client) Send(packet Packet) error {
 	return c.conn.WriteFrame(EncodeFrame(packet))
 }
 
+func (c *Client) SetCompression(threshold int) {
+	c.conn.SetThreshold(threshold)
+}
+
 func (c *Client) Close() error {
 	c.closed.Store(true)
 

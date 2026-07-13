@@ -13,6 +13,7 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[LoginAcknowledged](proto, gocraft.StateLogin, gocraft.Serverbound)
 
 	gocraft.Bind[LoginDisconnect](proto, gocraft.StateLogin, gocraft.Clientbound)
+	gocraft.Bind[EncryptionBegin](proto, gocraft.StateLogin, gocraft.Clientbound)
 	gocraft.Bind[LoginSuccess](proto, gocraft.StateLogin, gocraft.Clientbound)
 	gocraft.Bind[SetCompression](proto, gocraft.StateLogin, gocraft.Clientbound)
 

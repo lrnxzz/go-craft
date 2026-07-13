@@ -19,6 +19,28 @@ func (p *LoginStart) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.Username, &p.UUID)
 }
 
+type EncryptionBegin struct {
+	ServerID gocraft.String
+}
+
+func (EncryptionBegin) ID() int32 {
+	return 0x01
+}
+
+func (p EncryptionBegin) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.ServerID)
+}
+
+func (p *EncryptionBegin) Decode(r *gocraft.Reader) error {
+	if err := p.ServerID.Decode(r); err != nil {
+		return err
+	}
+
+	r.Rest()
+
+	return nil
+}
+
 type LoginAcknowledged struct{}
 
 func (LoginAcknowledged) ID() int32 {

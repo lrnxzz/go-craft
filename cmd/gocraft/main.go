@@ -17,6 +17,7 @@ func main() {
 
 	root.AddCommand(pingCommand())
 	root.AddCommand(loginCommand())
+	root.AddCommand(joinCommand())
 
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
