@@ -21,7 +21,14 @@ func TestClientInformationPreservesSettings(t *testing.T) {
 		EnableServerListing: true,
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StateConfiguration, gocraft.Serverbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StateConfiguration, gocraft.Serverbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("client information not registered")
+	}
 
 	if got := decoded.(*v765.ClientInformation); *got != *original {
 		t.Errorf("got %+v, want %+v", got, original)
@@ -34,7 +41,14 @@ func TestConfigKeepAliveDecodesInBothDirections(t *testing.T) {
 	}
 
 	for _, dir := range []gocraft.Direction{gocraft.Clientbound, gocraft.Serverbound} {
-		decoded := encodeAndDecode(t, gocraft.StateConfiguration, dir, original)
+		proto := v765.Protocol()
+		decoded, ok, err := proto.Decode(gocraft.StateConfiguration, dir, gocraft.EncodeFrame(original))
+		if err != nil {
+			t.Fatalf("%s: %v", dir, err)
+		}
+		if !ok {
+			t.Fatalf("%s: keep-alive not registered", dir)
+		}
 
 		if got := decoded.(*v765.ConfigKeepAlive); *got != *original {
 			t.Errorf("%s: got %+v, want %+v", dir, got, original)
@@ -49,7 +63,14 @@ func TestConfigDisconnectCarriesNBTReason(t *testing.T) {
 		},
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StateConfiguration, gocraft.Clientbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StateConfiguration, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("config disconnect not registered")
+	}
 
 	if got := decoded.(*v765.ConfigDisconnect); !reflect.DeepEqual(got.Reason, original.Reason) {
 		t.Errorf("reason = %#v, want %#v", got.Reason, original.Reason)
@@ -65,7 +86,14 @@ func TestRegistryDataCarriesNBTCodec(t *testing.T) {
 		},
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StateConfiguration, gocraft.Clientbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StateConfiguration, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("registry data not registered")
+	}
 
 	if got := decoded.(*v765.RegistryData); !reflect.DeepEqual(got.Codec, original.Codec) {
 		t.Errorf("codec = %#v, want %#v", got.Codec, original.Codec)
@@ -77,7 +105,14 @@ func TestFeatureFlagsCarriesFeatureList(t *testing.T) {
 		Features: gocraft.Slice[gocraft.Identifier]{"minecraft:vanilla", "minecraft:bundle"},
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StateConfiguration, gocraft.Clientbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StateConfiguration, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("feature flags not registered")
+	}
 
 	if got := decoded.(*v765.FeatureFlags); !reflect.DeepEqual(got, original) {
 		t.Errorf("got %+v, want %+v", got, original)

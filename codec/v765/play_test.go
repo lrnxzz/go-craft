@@ -34,7 +34,14 @@ func TestJoinGamePreservesAllFields(t *testing.T) {
 		PortalCooldown: 0,
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StatePlay, gocraft.Clientbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("join game not registered")
+	}
 
 	if got := decoded.(*v765.JoinGame); !reflect.DeepEqual(got, original) {
 		t.Errorf("got %+v, want %+v", got, original)
@@ -52,7 +59,14 @@ func TestSyncPlayerPositionCarriesTeleportID(t *testing.T) {
 		TeleportID: 7,
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StatePlay, gocraft.Clientbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("sync player position not registered")
+	}
 
 	got := decoded.(*v765.SyncPlayerPosition)
 	if *got != *original {
@@ -73,10 +87,18 @@ func TestPlayKeepAliveDistinctIDsPerDirection(t *testing.T) {
 		t.Fatal("clientbound and serverbound play keep-alive must have distinct ids")
 	}
 
+	proto := v765.Protocol()
+
 	received := &v765.PlayKeepAlive{
 		KeepAliveID: 555,
 	}
-	echoed := encodeAndDecode(t, gocraft.StatePlay, gocraft.Clientbound, received)
+	echoed, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.EncodeFrame(received))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("play keep-alive not registered")
+	}
 	if got := echoed.(*v765.PlayKeepAlive); got.KeepAliveID != 555 {
 		t.Errorf("keep alive id = %d, want 555", got.KeepAliveID)
 	}
@@ -84,7 +106,13 @@ func TestPlayKeepAliveDistinctIDsPerDirection(t *testing.T) {
 	reply := &v765.PlayKeepAliveResponse{
 		KeepAliveID: 555,
 	}
-	confirmed := encodeAndDecode(t, gocraft.StatePlay, gocraft.Serverbound, reply)
+	confirmed, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Serverbound, gocraft.EncodeFrame(reply))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("play keep-alive response not registered")
+	}
 	if got := confirmed.(*v765.PlayKeepAliveResponse); got.KeepAliveID != 555 {
 		t.Errorf("keep alive reply id = %d, want 555", got.KeepAliveID)
 	}
@@ -95,7 +123,14 @@ func TestConfirmTeleportCarriesTeleportID(t *testing.T) {
 		TeleportID: 7,
 	}
 
-	decoded := encodeAndDecode(t, gocraft.StatePlay, gocraft.Serverbound, original)
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Serverbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("confirm teleport not registered")
+	}
 
 	if got := decoded.(*v765.ConfirmTeleport); *got != *original {
 		t.Errorf("got %+v, want %+v", got, original)
