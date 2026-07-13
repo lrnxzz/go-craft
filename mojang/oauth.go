@@ -58,7 +58,7 @@ type OAuthError struct {
 }
 
 func (e *OAuthError) Error() string {
-	return fmt.Sprintf("auth: oauth failure %s: %s", e.Code, e.Description)
+	return fmt.Sprintf("mojang: oauth failure %s: %s", e.Code, e.Description)
 }
 
 type DeviceCode struct {

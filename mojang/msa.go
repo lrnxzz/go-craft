@@ -48,7 +48,7 @@ func (m *MSA) RequestDeviceCode(ctx context.Context) (DeviceCode, error) {
 	request.SetBodyString(form.encode())
 
 	deadline := time.Now().Add(msaTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 
@@ -56,7 +56,7 @@ func (m *MSA) RequestDeviceCode(ctx context.Context) (DeviceCode, error) {
 		return DeviceCode{}, err
 	}
 	if response.StatusCode() != fasthttp.StatusOK {
-		return DeviceCode{}, fmt.Errorf("auth: device code request returned %d: %s", response.StatusCode(), response.Body())
+		return DeviceCode{}, fmt.Errorf("mojang: device code request returned %d: %s", response.StatusCode(), response.Body())
 	}
 
 	var code DeviceCode
@@ -101,7 +101,7 @@ func (m *MSA) token(ctx context.Context, form msaForm) (TokenSet, error) {
 	request.SetBodyString(form.encode())
 
 	deadline := time.Now().Add(msaTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 
@@ -120,7 +120,7 @@ func (m *MSA) token(ctx context.Context, form msaForm) (TokenSet, error) {
 
 	var failure OAuthError
 	if err := json.Unmarshal(response.Body(), &failure); err != nil || failure.Code == "" {
-		return TokenSet{}, fmt.Errorf("auth: token request returned %d: %s", response.StatusCode(), response.Body())
+		return TokenSet{}, fmt.Errorf("mojang: token request returned %d: %s", response.StatusCode(), response.Body())
 	}
 
 	return TokenSet{}, &failure
@@ -148,7 +148,7 @@ func (p *devicePoll) run(ctx context.Context) (TokenSet, error) {
 		}
 	}
 
-	return TokenSet{}, fmt.Errorf("auth: device code expired before authorization")
+	return TokenSet{}, fmt.Errorf("mojang: device code expired before authorization")
 }
 
 func (p *devicePoll) wait(ctx context.Context) error {

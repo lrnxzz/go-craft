@@ -13,7 +13,7 @@ type Offline struct {
 
 func (o Offline) Authenticate(_ context.Context) (Session, error) {
 	if o.Username == "" {
-		return Session{}, fmt.Errorf("auth: offline username is empty")
+		return Session{}, fmt.Errorf("mojang: offline username is empty")
 	}
 
 	return Session{

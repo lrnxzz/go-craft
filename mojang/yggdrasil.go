@@ -41,7 +41,7 @@ type yggdrasilError struct {
 }
 
 func (e *yggdrasilError) Error() string {
-	return fmt.Sprintf("auth: yggdrasil %s: %s", e.Err, e.Message)
+	return fmt.Sprintf("mojang: yggdrasil %s: %s", e.Err, e.Message)
 }
 
 type Yggdrasil struct {
@@ -78,7 +78,7 @@ func (y Yggdrasil) Authenticate(ctx context.Context) (Session, error) {
 	request.SetBody(body)
 
 	deadline := time.Now().Add(yggdrasilTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 
@@ -92,7 +92,7 @@ func (y Yggdrasil) Authenticate(ctx context.Context) (Session, error) {
 			return Session{}, &failure
 		}
 
-		return Session{}, fmt.Errorf("auth: yggdrasil authenticate returned %d: %s", response.StatusCode(), response.Body())
+		return Session{}, fmt.Errorf("mojang: yggdrasil authenticate returned %d: %s", response.StatusCode(), response.Body())
 	}
 
 	var decoded yggdrasilResponse

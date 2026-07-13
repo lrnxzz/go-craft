@@ -97,7 +97,7 @@ func loginWithIdentity(ctx context.Context, identityToken string) (minecraftToke
 	request.SetBody(body)
 
 	deadline := time.Now().Add(loginTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 
@@ -105,7 +105,7 @@ func loginWithIdentity(ctx context.Context, identityToken string) (minecraftToke
 		return minecraftToken{}, err
 	}
 	if response.StatusCode() != fasthttp.StatusOK {
-		return minecraftToken{}, fmt.Errorf("auth: login_with_xbox returned %d: %s", response.StatusCode(), response.Body())
+		return minecraftToken{}, fmt.Errorf("mojang: login_with_xbox returned %d: %s", response.StatusCode(), response.Body())
 	}
 
 	var token minecraftToken

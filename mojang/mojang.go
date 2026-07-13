@@ -54,7 +54,7 @@ func (m *Mojang) Profile(ctx context.Context) (Profile, error) {
 		return Profile{}, err
 	}
 	if status != fasthttp.StatusOK {
-		return Profile{}, fmt.Errorf("auth: profile request returned %d: %s", status, raw)
+		return Profile{}, fmt.Errorf("mojang: profile request returned %d: %s", status, raw)
 	}
 
 	var profile Profile
@@ -82,7 +82,7 @@ func (m *Mojang) JoinServer(ctx context.Context, profile Profile, serverID strin
 		return err
 	}
 	if status != fasthttp.StatusNoContent {
-		return fmt.Errorf("auth: join request returned %d: %s", status, raw)
+		return fmt.Errorf("mojang: join request returned %d: %s", status, raw)
 	}
 
 	return nil
@@ -96,10 +96,10 @@ func (m *Mojang) HasJoined(ctx context.Context, username, serverID string) (Prof
 		return Profile{}, err
 	}
 	if status == fasthttp.StatusNoContent {
-		return Profile{}, fmt.Errorf("auth: no session for %s on server %s", username, serverID)
+		return Profile{}, fmt.Errorf("mojang: no session for %s on server %s", username, serverID)
 	}
 	if status != fasthttp.StatusOK {
-		return Profile{}, fmt.Errorf("auth: hasJoined request returned %d: %s", status, raw)
+		return Profile{}, fmt.Errorf("mojang: hasJoined request returned %d: %s", status, raw)
 	}
 
 	var profile Profile
@@ -127,7 +127,7 @@ func (m *Mojang) do(ctx context.Context, method, target string, body []byte) ([]
 	}
 
 	deadline := time.Now().Add(mojangTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 

@@ -41,7 +41,7 @@ type XSTSError struct {
 }
 
 func (e *XSTSError) Error() string {
-	return fmt.Sprintf("auth: xsts denied: %s (%d)", e.Reason(), e.XErr)
+	return fmt.Sprintf("mojang: xsts denied: %s (%d)", e.Reason(), e.XErr)
 }
 
 func (e *XSTSError) Reason() string {
@@ -192,7 +192,7 @@ func (x *Xbox) authorize(ctx context.Context, target string, body []byte) (XboxT
 	request.SetBody(body)
 
 	deadline := time.Now().Add(xboxTimeout)
-	if ctxDeadline, ok := ctx.Deadline(); ok {
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
 		deadline = ctxDeadline
 	}
 
@@ -207,7 +207,7 @@ func (x *Xbox) authorize(ctx context.Context, target string, body []byte) (XboxT
 		}
 	}
 	if response.StatusCode() != fasthttp.StatusOK {
-		return XboxToken{}, fmt.Errorf("auth: xbox authorization returned %d: %s", response.StatusCode(), response.Body())
+		return XboxToken{}, fmt.Errorf("mojang: xbox authorization returned %d: %s", response.StatusCode(), response.Body())
 	}
 
 	var decoded xboxResponse
@@ -215,7 +215,7 @@ func (x *Xbox) authorize(ctx context.Context, target string, body []byte) (XboxT
 		return XboxToken{}, err
 	}
 	if len(decoded.DisplayClaims.XUI) == 0 {
-		return XboxToken{}, fmt.Errorf("auth: xbox response carries no user claims")
+		return XboxToken{}, fmt.Errorf("mojang: xbox response carries no user claims")
 	}
 
 	return XboxToken{
