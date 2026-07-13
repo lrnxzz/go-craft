@@ -13,6 +13,10 @@ func (*Handshake) ID() int32 {
 	return 0x00
 }
 
+func (*Handshake) Name() string {
+	return "Handshake"
+}
+
 func (p Handshake) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.ProtocolVersion, p.ServerAddress, p.ServerPort, p.NextState)
 }

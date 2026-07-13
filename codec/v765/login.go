@@ -11,6 +11,10 @@ func (*LoginStart) ID() int32 {
 	return 0x00
 }
 
+func (*LoginStart) Name() string {
+	return "LoginStart"
+}
+
 func (p LoginStart) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Username, p.UUID)
 }
@@ -25,6 +29,10 @@ type EncryptionBegin struct {
 
 func (*EncryptionBegin) ID() int32 {
 	return 0x01
+}
+
+func (*EncryptionBegin) Name() string {
+	return "EncryptionBegin"
 }
 
 func (p EncryptionBegin) Append(dst []byte) []byte {
@@ -45,6 +53,10 @@ type LoginAcknowledged struct{}
 
 func (*LoginAcknowledged) ID() int32 {
 	return 0x03
+}
+
+func (*LoginAcknowledged) Name() string {
+	return "LoginAcknowledged"
 }
 
 func (LoginAcknowledged) Append(dst []byte) []byte {
@@ -79,6 +91,10 @@ func (*LoginSuccess) ID() int32 {
 	return 0x02
 }
 
+func (*LoginSuccess) Name() string {
+	return "LoginSuccess"
+}
+
 func (p LoginSuccess) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.UUID, p.Username, p.Properties)
 }
@@ -95,6 +111,10 @@ func (*SetCompression) ID() int32 {
 	return 0x03
 }
 
+func (*SetCompression) Name() string {
+	return "SetCompression"
+}
+
 func (p SetCompression) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Threshold)
 }
@@ -109,6 +129,10 @@ type LoginDisconnect struct {
 
 func (*LoginDisconnect) ID() int32 {
 	return 0x00
+}
+
+func (*LoginDisconnect) Name() string {
+	return "LoginDisconnect"
 }
 
 func (p LoginDisconnect) Append(dst []byte) []byte {

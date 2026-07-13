@@ -49,6 +49,7 @@ func (d Direction) String() string {
 
 type Packet interface {
 	ID() int32
+	Name() string
 	Append(dst []byte) []byte
 	Decode(r *Reader) error
 }

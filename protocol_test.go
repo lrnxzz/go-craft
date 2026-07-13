@@ -15,6 +15,10 @@ func (*keepAlivePacket) ID() int32 {
 	return 0x2A
 }
 
+func (*keepAlivePacket) Name() string {
+	return "KeepAlive"
+}
+
 func (p keepAlivePacket) Append(dst []byte) []byte {
 	return gocraft.Marshal(p.Nonce, p.Label)
 }

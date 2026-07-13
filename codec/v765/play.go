@@ -40,6 +40,10 @@ func (*JoinGame) ID() int32 {
 	return 0x29
 }
 
+func (*JoinGame) Name() string {
+	return "JoinGame"
+}
+
 func (p JoinGame) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.EntityID, p.Hardcore, p.Worlds, p.MaxPlayers, p.ViewDistance,
 		p.SimulationDistance, p.ReducedDebugInfo, p.EnableRespawnScreen, p.LimitedCrafting,
@@ -62,6 +66,10 @@ func (*PlayKeepAlive) ID() int32 {
 	return 0x24
 }
 
+func (*PlayKeepAlive) Name() string {
+	return "PlayKeepAlive"
+}
+
 func (p PlayKeepAlive) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.KeepAliveID)
 }
@@ -76,6 +84,10 @@ type PlayKeepAliveResponse struct {
 
 func (*PlayKeepAliveResponse) ID() int32 {
 	return 0x15
+}
+
+func (*PlayKeepAliveResponse) Name() string {
+	return "PlayKeepAliveResponse"
 }
 
 func (p PlayKeepAliveResponse) Append(dst []byte) []byte {
@@ -100,6 +112,10 @@ func (*SyncPlayerPosition) ID() int32 {
 	return 0x3E
 }
 
+func (*SyncPlayerPosition) Name() string {
+	return "SyncPlayerPosition"
+}
+
 func (p SyncPlayerPosition) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.X, p.Y, p.Z, p.Yaw, p.Pitch, p.Flags, p.TeleportID)
 }
@@ -116,6 +132,10 @@ func (*ConfirmTeleport) ID() int32 {
 	return 0x00
 }
 
+func (*ConfirmTeleport) Name() string {
+	return "ConfirmTeleport"
+}
+
 func (p ConfirmTeleport) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.TeleportID)
 }
@@ -130,6 +150,10 @@ type PlayDisconnect struct {
 
 func (*PlayDisconnect) ID() int32 {
 	return 0x1B
+}
+
+func (*PlayDisconnect) Name() string {
+	return "PlayDisconnect"
 }
 
 func (p PlayDisconnect) Append(dst []byte) []byte {

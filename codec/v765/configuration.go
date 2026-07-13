@@ -17,6 +17,10 @@ func (*ClientInformation) ID() int32 {
 	return 0x00
 }
 
+func (*ClientInformation) Name() string {
+	return "ClientInformation"
+}
+
 func (p ClientInformation) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Locale, p.ViewDistance, p.ChatMode, p.ChatColors,
 		p.DisplayedSkinParts, p.MainHand, p.EnableTextFiltering, p.EnableServerListing)
@@ -35,6 +39,10 @@ func (*ConfigDisconnect) ID() int32 {
 	return 0x01
 }
 
+func (*ConfigDisconnect) Name() string {
+	return "ConfigDisconnect"
+}
+
 func (p ConfigDisconnect) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Reason)
 }
@@ -47,6 +55,10 @@ type FinishConfiguration struct{}
 
 func (*FinishConfiguration) ID() int32 {
 	return 0x02
+}
+
+func (*FinishConfiguration) Name() string {
+	return "FinishConfiguration"
 }
 
 func (FinishConfiguration) Append(dst []byte) []byte {
@@ -65,6 +77,10 @@ func (*ConfigKeepAlive) ID() int32 {
 	return 0x03
 }
 
+func (*ConfigKeepAlive) Name() string {
+	return "ConfigKeepAlive"
+}
+
 func (p ConfigKeepAlive) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.KeepAliveID)
 }
@@ -79,6 +95,10 @@ type ConfigKeepAliveResponse struct {
 
 func (*ConfigKeepAliveResponse) ID() int32 {
 	return 0x03
+}
+
+func (*ConfigKeepAliveResponse) Name() string {
+	return "ConfigKeepAliveResponse"
 }
 
 func (p ConfigKeepAliveResponse) Append(dst []byte) []byte {
@@ -97,6 +117,10 @@ func (*ConfigPing) ID() int32 {
 	return 0x04
 }
 
+func (*ConfigPing) Name() string {
+	return "ConfigPing"
+}
+
 func (p ConfigPing) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.PingID)
 }
@@ -111,6 +135,10 @@ type ConfigPong struct {
 
 func (*ConfigPong) ID() int32 {
 	return 0x04
+}
+
+func (*ConfigPong) Name() string {
+	return "ConfigPong"
 }
 
 func (p ConfigPong) Append(dst []byte) []byte {
@@ -129,6 +157,10 @@ func (*RegistryData) ID() int32 {
 	return 0x05
 }
 
+func (*RegistryData) Name() string {
+	return "RegistryData"
+}
+
 func (p RegistryData) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Codec)
 }
@@ -143,6 +175,10 @@ type FeatureFlags struct {
 
 func (*FeatureFlags) ID() int32 {
 	return 0x07
+}
+
+func (*FeatureFlags) Name() string {
+	return "FeatureFlags"
 }
 
 func (p FeatureFlags) Append(dst []byte) []byte {
