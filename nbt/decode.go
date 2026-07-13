@@ -19,22 +19,28 @@ type decoder struct {
 }
 
 func Decode(data []byte) (Compound, error) {
+	compound, _, err := DecodePrefix(data)
+
+	return compound, err
+}
+
+func DecodePrefix(data []byte) (Compound, int, error) {
 	dec := &decoder{buf: data}
 
 	root := dec._byte()
 	if dec.err != nil {
-		return nil, dec.err
+		return nil, 0, dec.err
 	}
 	if TagType(root) != TagCompound {
-		return nil, fmt.Errorf("nbt: root tag is %d, want compound", root)
+		return nil, 0, fmt.Errorf("nbt: root tag is %d, want compound", root)
 	}
 
 	compound := dec._compound()
 	if dec.err != nil {
-		return nil, dec.err
+		return nil, 0, dec.err
 	}
 
-	return compound, nil
+	return compound, dec.off, nil
 }
 
 func DecodeNamed(data []byte) (string, Compound, error) {
