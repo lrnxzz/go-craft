@@ -88,7 +88,7 @@ func Bind[T any, P packetPtr[T]](proto *Protocol, state State, dir Direction) {
 	proto.factories[key] = factory
 }
 
-func (proto *Protocol) New(state State, dir Direction, id int32) (Packet, bool) {
+func (proto *Protocol) NewPacket(state State, dir Direction, id int32) (Packet, bool) {
 	key := packetKey{
 		state: state,
 		dir:   dir,
@@ -104,7 +104,7 @@ func (proto *Protocol) New(state State, dir Direction, id int32) (Packet, bool) 
 }
 
 func (proto *Protocol) Decode(state State, dir Direction, frame Frame) (Packet, bool, error) {
-	packet, ok := proto.New(state, dir, int32(frame.ID))
+	packet, ok := proto.NewPacket(state, dir, int32(frame.ID))
 	if !ok {
 		return nil, false, nil
 	}

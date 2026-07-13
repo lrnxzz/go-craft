@@ -72,10 +72,10 @@ func TestProtocolIsolatesStateAndDirection(t *testing.T) {
 	proto := gocraft.NewProtocol()
 	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
 
-	if _, ok := proto.New(gocraft.StateLogin, gocraft.Clientbound, 0x2A); ok {
+	if _, ok := proto.NewPacket(gocraft.StateLogin, gocraft.Clientbound, 0x2A); ok {
 		t.Error("packet leaked across states")
 	}
-	if _, ok := proto.New(gocraft.StatePlay, gocraft.Serverbound, 0x2A); ok {
+	if _, ok := proto.NewPacket(gocraft.StatePlay, gocraft.Serverbound, 0x2A); ok {
 		t.Error("packet leaked across directions")
 	}
 }
