@@ -85,15 +85,55 @@ func TestClientStopsOnContextCancel(t *testing.T) {
 	}
 }
 
+func TestClientReaderNotBlockedByPendingWrites(t *testing.T) {
+	clientSide, serverSide := net.Pipe()
+
+	proto := gocraft.NewProtocol()
+	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+
+	client := gocraft.NewClient(gocraft.NewConn(clientSide), proto)
+	client.SetState(gocraft.StatePlay)
+
+	const count = 2
+	seen := make(chan gocraft.Long, count)
+	gocraft.On[*keepAlivePacket](client, gocraft.StatePlay, func(c *gocraft.Client, p *keepAlivePacket) error {
+		seen <- p.Nonce
+
+		return c.Send(&keepAlivePacket{Nonce: p.Nonce})
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go client.Run(ctx)
+
+	server := gocraft.NewConn(serverSide)
+	for i := range count {
+		if err := server.WriteFrame(gocraft.EncodeFrame(&keepAlivePacket{Nonce: gocraft.Long(i + 1)})); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for range count {
+		select {
+		case <-seen:
+		case <-time.After(time.Second):
+			t.Fatal("reader stalled — a handler's Send blocked the read loop")
+		}
+	}
+}
+
 func TestClientSendEncodesFrame(t *testing.T) {
 	clientSide, serverSide := net.Pipe()
 
 	client := gocraft.NewClient(gocraft.NewConn(clientSide), gocraft.NewProtocol())
 
-	go client.Send(&keepAlivePacket{
-		Nonce: 9,
-		Label: "x",
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go client.Run(ctx)
+
+	if err := client.Send(&keepAlivePacket{Nonce: 9, Label: "x"}); err != nil {
+		t.Fatal(err)
+	}
 
 	server := gocraft.NewConn(serverSide)
 	frame, err := server.ReadFrame()

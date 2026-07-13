@@ -5,6 +5,24 @@ import (
 	"unicode/utf16"
 )
 
+func mutf8Len(s string) int {
+	n := 0
+	for _, r := range s {
+		switch {
+		case r >= 0x0001 && r <= 0x007F:
+			n++
+		case r == 0x0000 || r <= 0x07FF:
+			n += 2
+		case r <= 0xFFFF:
+			n += 3
+		default:
+			n += 6
+		}
+	}
+
+	return n
+}
+
 func encodeMUTF8(dst []byte, s string) []byte {
 	for _, r := range s {
 		if r > 0xFFFF {
@@ -45,13 +63,27 @@ func decodeMUTF8(raw []byte) (string, error) {
 			if i+1 >= len(raw) {
 				return "", fmt.Errorf("nbt: truncated 2-byte mutf-8 sequence")
 			}
-			units = append(units, uint16(lead&0x1F)<<6|uint16(raw[i+1]&0x3F))
+			if raw[i+1]&0xC0 != 0x80 {
+				return "", fmt.Errorf("nbt: invalid mutf-8 continuation byte %#x", raw[i+1])
+			}
+			unit := uint16(lead&0x1F)<<6 | uint16(raw[i+1]&0x3F)
+			if unit != 0 && unit < 0x80 {
+				return "", fmt.Errorf("nbt: overlong mutf-8 encoding of %#x", unit)
+			}
+			units = append(units, unit)
 			i += 2
 		case lead&0xF0 == 0xE0:
 			if i+2 >= len(raw) {
 				return "", fmt.Errorf("nbt: truncated 3-byte mutf-8 sequence")
 			}
-			units = append(units, uint16(lead&0x0F)<<12|uint16(raw[i+1]&0x3F)<<6|uint16(raw[i+2]&0x3F))
+			if raw[i+1]&0xC0 != 0x80 || raw[i+2]&0xC0 != 0x80 {
+				return "", fmt.Errorf("nbt: invalid mutf-8 continuation byte")
+			}
+			unit := uint16(lead&0x0F)<<12 | uint16(raw[i+1]&0x3F)<<6 | uint16(raw[i+2]&0x3F)
+			if unit < 0x800 {
+				return "", fmt.Errorf("nbt: overlong mutf-8 encoding of %#x", unit)
+			}
+			units = append(units, unit)
 			i += 3
 		default:
 			return "", fmt.Errorf("nbt: invalid mutf-8 lead byte %#x", lead)

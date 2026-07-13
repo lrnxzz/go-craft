@@ -279,7 +279,7 @@ func (s *Slice[T]) Decode(r *Reader) error {
 	if err := n.Decode(r); err != nil {
 		return err
 	}
-	if n < 0 {
+	if n < 0 || int(n) > r.Remaining() {
 		return r.fail(fmt.Errorf("gocraft: slice of %d elements is out of range", n))
 	}
 	elements := make(Slice[T], 0, min(int(n), maxPrealloc))

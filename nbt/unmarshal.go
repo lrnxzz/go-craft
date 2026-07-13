@@ -220,19 +220,22 @@ func (u *unmarshaler) array(tag TagType, target reflect.Value) {
 		return
 	}
 
-	slice := reflect.MakeSlice(target.Type(), n, n)
-	for i := range n {
+	elem := target.Type().Elem()
+	slice := reflect.MakeSlice(target.Type(), 0, min(n, maxPrealloc))
+	for range n {
+		item := reflect.New(elem).Elem()
 		switch tag {
 		case TagByteArray:
-			slice.Index(i).SetInt(int64(int8(u.dec.u8())))
+			item.SetInt(int64(int8(u.dec.u8())))
 		case TagIntArray:
-			slice.Index(i).SetInt(int64(int32(u.dec.u32())))
+			item.SetInt(int64(int32(u.dec.u32())))
 		case TagLongArray:
-			slice.Index(i).SetInt(int64(u.dec.u64()))
+			item.SetInt(int64(u.dec.u64()))
 		}
 		if u.dec.err != nil {
 			return
 		}
+		slice = reflect.Append(slice, item)
 	}
 
 	target.Set(slice)
@@ -247,8 +250,10 @@ func (u *unmarshaler) setInt(target reflect.Value, value int64) {
 	switch target.Kind() {
 	case reflect.Bool:
 		target.SetBool(value != 0)
-	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
 		target.SetInt(value)
+	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
+		target.SetUint(uint64(value))
 	default:
 		u.dec.fail(fmt.Errorf("nbt: cannot assign integer to %s", target.Type()))
 	}

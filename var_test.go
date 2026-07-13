@@ -122,6 +122,9 @@ func TestReadVarOnMalformedInput(t *testing.T) {
 		{
 			input: unterminated,
 		},
+		{
+			input: []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x7F},
+		},
 	}
 
 	for _, tt := range tests {
@@ -138,5 +141,10 @@ func TestReadVarOnMalformedInput(t *testing.T) {
 
 	if _, err := gocraft.ReadVar[int64](bytes.NewReader(unterminated)); err == nil {
 		t.Error("ReadVar[int64](unterminated): expected an error, got nil")
+	}
+
+	overlong := append(bytes.Repeat([]byte{0xFF}, 9), 0x02)
+	if _, err := gocraft.ReadVar[int64](bytes.NewReader(overlong)); err == nil {
+		t.Error("ReadVar[int64](overlong): expected an error, got nil")
 	}
 }

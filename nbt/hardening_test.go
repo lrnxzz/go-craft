@@ -38,6 +38,24 @@ func TestDecodeRejectsDeeplyNestedInput(t *testing.T) {
 	}
 }
 
+type longArrayHolder struct {
+	Values []int64 `nbt:"values"`
+}
+
+func TestUnmarshalRejectsOversizedArrayLength(t *testing.T) {
+	payload := []byte{
+		byte(nbt.TagCompound),
+		byte(nbt.TagLongArray),
+		0x00, 0x06, 'v', 'a', 'l', 'u', 'e', 's',
+		0x7F, 0xFF, 0xFF, 0xFF,
+	}
+
+	var target longArrayHolder
+	if err := nbt.Unmarshal(payload, &target); err == nil {
+		t.Error("expected an error on an array length with no backing data, got nil")
+	}
+}
+
 func TestDecodeNeverPanicsOnTruncatedInput(t *testing.T) {
 	full := nbt.Encode(richTree())
 

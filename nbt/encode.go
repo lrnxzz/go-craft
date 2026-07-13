@@ -2,7 +2,9 @@ package nbt
 
 import (
 	"encoding/binary"
+	"maps"
 	"math"
+	"slices"
 )
 
 func Encode(root Compound) []byte {
@@ -75,7 +77,8 @@ func encodeList(buf []byte, list List) []byte {
 }
 
 func encodeCompound(buf []byte, compound Compound) []byte {
-	for name, value := range compound {
+	for _, name := range slices.Sorted(maps.Keys(compound)) {
+		value := compound[name]
 		buf = append(buf, byte(value.Type()))
 		buf = encodeString(buf, name)
 		buf = encodePayload(buf, value)

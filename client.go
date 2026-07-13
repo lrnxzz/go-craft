@@ -2,8 +2,14 @@ package gocraft
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"sync/atomic"
+
+	"golang.org/x/sync/errgroup"
 )
+
+const outboundBuffer = 256
 
 type handlerKey struct {
 	state State
@@ -11,11 +17,13 @@ type handlerKey struct {
 }
 
 type Client struct {
-	conn     *Conn
-	protocol *Protocol
-	state    atomic.Uint32
-	stopped  atomic.Bool
-	handlers map[handlerKey][]func(*Client, Packet) error
+	conn      *Conn
+	protocol  *Protocol
+	state     atomic.Uint32
+	handlers  map[handlerKey][]func(*Client, Packet) error
+	outbound  chan Packet
+	done      chan struct{}
+	closeOnce sync.Once
 }
 
 func NewClient(conn *Conn, protocol *Protocol) *Client {
@@ -23,6 +31,8 @@ func NewClient(conn *Conn, protocol *Protocol) *Client {
 		conn:     conn,
 		protocol: protocol,
 		handlers: make(map[handlerKey][]func(*Client, Packet) error),
+		outbound: make(chan Packet, outboundBuffer),
+		done:     make(chan struct{}),
 	}
 
 	return client
@@ -37,7 +47,12 @@ func (c *Client) SetState(state State) {
 }
 
 func (c *Client) Send(packet Packet) error {
-	return c.conn.WriteFrame(EncodeFrame(packet))
+	select {
+	case c.outbound <- packet:
+		return nil
+	case <-c.done:
+		return fmt.Errorf("gocraft: send on a closed client")
+	}
 }
 
 func (c *Client) SetCompression(threshold int) {
@@ -45,9 +60,20 @@ func (c *Client) SetCompression(threshold int) {
 }
 
 func (c *Client) Close() error {
-	c.stopped.Store(true)
+	c.closeOnce.Do(func() {
+		close(c.done)
+	})
 
 	return c.conn.Close()
+}
+
+func (c *Client) closed() bool {
+	select {
+	case <-c.done:
+		return true
+	default:
+		return false
+	}
 }
 
 func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
@@ -64,12 +90,32 @@ func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
 	c.handlers[key] = append(c.handlers[key], wrapped)
 }
 
-func (c *Client) Run(ctx context.Context) error {
+func (c *Client) Run(parent context.Context) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+
 	stop := context.AfterFunc(ctx, func() {
-		c.conn.Close()
+		c.Close()
 	})
 	defer stop()
 
+	var group errgroup.Group
+
+	group.Go(func() error {
+		defer cancel()
+
+		return c.readLoop(ctx)
+	})
+	group.Go(func() error {
+		defer cancel()
+
+		return c.writeLoop(ctx)
+	})
+
+	return group.Wait()
+}
+
+func (c *Client) readLoop(ctx context.Context) error {
 	for {
 		frame, err := c.conn.ReadFrame()
 		if err != nil {
@@ -78,6 +124,19 @@ func (c *Client) Run(ctx context.Context) error {
 
 		if err := c.receive(frame); err != nil {
 			return err
+		}
+	}
+}
+
+func (c *Client) writeLoop(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case packet := <-c.outbound:
+			if err := c.conn.WriteFrame(EncodeFrame(packet)); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -93,10 +152,10 @@ func (c *Client) receive(frame Frame) error {
 
 func (c *Client) exit(ctx context.Context, readErr error) error {
 	switch {
-	case c.stopped.Load():
-		return nil
 	case ctx.Err() != nil:
 		return ctx.Err()
+	case c.closed():
+		return nil
 	default:
 		return readErr
 	}

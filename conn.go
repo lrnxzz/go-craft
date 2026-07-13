@@ -91,7 +91,7 @@ func (c *Conn) ReadFrame() (Frame, error) {
 	}
 
 	body := frame
-	if c.threshold.Load() != noCompression {
+	if c.threshold.Load() >= 0 {
 		if body, err = c.inflate(frame); err != nil {
 			return Frame{}, err
 		}
@@ -112,7 +112,7 @@ func (c *Conn) ReadFrame() (Frame, error) {
 
 func (c *Conn) frame(body []byte) ([]byte, error) {
 	threshold := int(c.threshold.Load())
-	if threshold == noCompression {
+	if threshold < 0 {
 		frame := AppendVar(nil, VarInt(len(body)))
 
 		return append(frame, body...), nil

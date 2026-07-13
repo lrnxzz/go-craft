@@ -37,6 +37,28 @@ func TestBitSetSetGetClear(t *testing.T) {
 	}
 }
 
+func TestBitSetIgnoresNegativeIndex(t *testing.T) {
+	var set gocraft.BitSet
+
+	set.Set(-1)
+	set.Set(-30)
+
+	if set.Get(-1) || set.Get(-30) {
+		t.Error("Get(negative) = true, want false")
+	}
+	if got := set.Count(); got != 0 {
+		t.Errorf("Count() = %d after negative Set, want 0", got)
+	}
+
+	fixed := gocraft.NewFixedBitSet(16)
+	fixed.Set(-1)
+	fixed.Set(-5)
+
+	if fixed.Get(-1) || fixed.Count() != 0 {
+		t.Error("FixedBitSet corrupted by a negative index")
+	}
+}
+
 func TestBitSetRoundTrip(t *testing.T) {
 	var want gocraft.BitSet
 	for _, i := range []int{3, 70, 128, 255} {

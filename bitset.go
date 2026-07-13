@@ -10,7 +10,7 @@ type BitSet []uint64
 
 func (b BitSet) Get(i int) bool {
 	word := i / 64
-	if word < 0 || word >= len(b) {
+	if i < 0 || word >= len(b) {
 		return false
 	}
 
@@ -18,6 +18,10 @@ func (b BitSet) Get(i int) bool {
 }
 
 func (b *BitSet) Set(i int) {
+	if i < 0 {
+		return
+	}
+
 	word := i / 64
 	for len(*b) <= word {
 		*b = append(*b, 0)
@@ -28,7 +32,7 @@ func (b *BitSet) Set(i int) {
 
 func (b BitSet) Clear(i int) {
 	word := i / 64
-	if word < 0 || word >= len(b) {
+	if i < 0 || word >= len(b) {
 		return
 	}
 
@@ -62,7 +66,7 @@ func (b *BitSet) Decode(r *Reader) error {
 	if err := count.Decode(r); err != nil {
 		return err
 	}
-	if count < 0 {
+	if count < 0 || int(count) > r.Remaining()/8 {
 		return r.fail(fmt.Errorf("gocraft: bitset of %d longs is out of range", count))
 	}
 
@@ -89,7 +93,7 @@ func NewFixedBitSet(bitCount int) FixedBitSet {
 
 func (f FixedBitSet) Get(i int) bool {
 	index := i / 8
-	if index < 0 || index >= len(f) {
+	if i < 0 || index >= len(f) {
 		return false
 	}
 
@@ -98,7 +102,7 @@ func (f FixedBitSet) Get(i int) bool {
 
 func (f FixedBitSet) Set(i int) {
 	index := i / 8
-	if index < 0 || index >= len(f) {
+	if i < 0 || index >= len(f) {
 		return
 	}
 
@@ -107,7 +111,7 @@ func (f FixedBitSet) Set(i int) {
 
 func (f FixedBitSet) Clear(i int) {
 	index := i / 8
-	if index < 0 || index >= len(f) {
+	if i < 0 || index >= len(f) {
 		return
 	}
 

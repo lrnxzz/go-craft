@@ -3,7 +3,10 @@ package nbt
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"reflect"
+	"slices"
+	"strings"
 )
 
 func Marshal(v any) ([]byte, error) {
@@ -15,7 +18,7 @@ func Marshal(v any) ([]byte, error) {
 
 func MarshalNamed(name string, v any) ([]byte, error) {
 	m := marshaler{buf: []byte{byte(TagCompound)}}
-	m.buf = encodeString(m.buf, name)
+	m.writeString(name)
 	m.compound(reflect.ValueOf(v))
 
 	return m.buf, m.err
@@ -30,6 +33,15 @@ func (m *marshaler) fail(err error) {
 	if m.err == nil {
 		m.err = err
 	}
+}
+
+func (m *marshaler) writeString(s string) {
+	if n := mutf8Len(s); n > math.MaxUint16 {
+		m.fail(fmt.Errorf("nbt: string of %d bytes exceeds the %d-byte limit", n, math.MaxUint16))
+		return
+	}
+
+	m.buf = encodeString(m.buf, s)
 }
 
 func (m *marshaler) compound(v reflect.Value) {
@@ -58,9 +70,12 @@ func (m *marshaler) compound(v reflect.Value) {
 			return
 		}
 
-		iter := v.MapRange()
-		for iter.Next() {
-			m.namedTag(iter.Key().String(), deref(iter.Value()), false)
+		keys := v.MapKeys()
+		slices.SortFunc(keys, func(a, b reflect.Value) int {
+			return strings.Compare(a.String(), b.String())
+		})
+		for _, key := range keys {
+			m.namedTag(key.String(), deref(v.MapIndex(key)), false)
 		}
 	default:
 		m.fail(fmt.Errorf("nbt: cannot marshal %s as a compound", v.Kind()))
@@ -81,7 +96,7 @@ func (m *marshaler) namedTag(name string, v reflect.Value, asList bool) {
 	}
 
 	m.buf = append(m.buf, byte(tag))
-	m.buf = encodeString(m.buf, name)
+	m.writeString(name)
 	m.payload(v, asList)
 }
 
@@ -91,13 +106,13 @@ func (m *marshaler) tagOf(v reflect.Value, asList bool) TagType {
 	}
 
 	switch v.Kind() {
-	case reflect.Bool, reflect.Int8:
+	case reflect.Bool, reflect.Int8, reflect.Uint8:
 		return TagByte
-	case reflect.Int16:
+	case reflect.Int16, reflect.Uint16:
 		return TagShort
-	case reflect.Int32:
+	case reflect.Int32, reflect.Uint32:
 		return TagInt
-	case reflect.Int64:
+	case reflect.Int64, reflect.Int, reflect.Uint64, reflect.Uint:
 		return TagLong
 	case reflect.Float32:
 		return TagFloat
@@ -139,14 +154,22 @@ func (m *marshaler) payload(v reflect.Value, asList bool) {
 		m.buf = encodePayload(m.buf, Short(v.Int()))
 	case reflect.Int32:
 		m.buf = encodePayload(m.buf, Int(v.Int()))
-	case reflect.Int64:
+	case reflect.Int64, reflect.Int:
 		m.buf = encodePayload(m.buf, Long(v.Int()))
+	case reflect.Uint8:
+		m.buf = encodePayload(m.buf, Byte(v.Uint()))
+	case reflect.Uint16:
+		m.buf = encodePayload(m.buf, Short(v.Uint()))
+	case reflect.Uint32:
+		m.buf = encodePayload(m.buf, Int(v.Uint()))
+	case reflect.Uint64, reflect.Uint:
+		m.buf = encodePayload(m.buf, Long(v.Uint()))
 	case reflect.Float32:
 		m.buf = encodePayload(m.buf, Float(v.Float()))
 	case reflect.Float64:
 		m.buf = encodePayload(m.buf, Double(v.Float()))
 	case reflect.String:
-		m.buf = encodeString(m.buf, v.String())
+		m.writeString(v.String())
 	case reflect.Slice, reflect.Array:
 		m.sequence(v, asList)
 	case reflect.Struct, reflect.Map:

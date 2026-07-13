@@ -54,3 +54,18 @@ func TestMUTF8RejectsTruncatedSequence(t *testing.T) {
 		t.Error("expected an error on a truncated 3-byte sequence, got nil")
 	}
 }
+
+func TestMUTF8RejectsMalformedSequences(t *testing.T) {
+	inputs := [][]byte{
+		{0xC0, 0x00},       // 2-byte with a non-continuation second byte
+		{0xC1, 0x81},       // overlong 2-byte encoding of 'A'
+		{0xE0, 0x80, 0x80}, // overlong 3-byte encoding of 0x0000
+		{0xE0, 0xFF, 0x80}, // 3-byte with a non-continuation second byte
+	}
+
+	for _, input := range inputs {
+		if _, err := decodeMUTF8(input); err == nil {
+			t.Errorf("decodeMUTF8(%x): expected an error, got nil", input)
+		}
+	}
+}

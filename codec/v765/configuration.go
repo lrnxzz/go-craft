@@ -126,7 +126,7 @@ type FeatureFlags struct {
 }
 
 func (*FeatureFlags) ID() int32 {
-	return 0x08
+	return 0x07
 }
 
 func (p FeatureFlags) Append(dst []byte) []byte {

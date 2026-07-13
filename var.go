@@ -51,6 +51,7 @@ func AppendVar[T varint](dst []byte, v T) []byte {
 }
 
 func ReadVar[T varint](r io.ByteReader) (T, error) {
+	width := widthOf[T]()
 	var u uint64
 	for i := range maxLenOf[T]() {
 		b, err := r.ReadByte()
@@ -59,6 +60,9 @@ func ReadVar[T varint](r io.ByteReader) (T, error) {
 				err = io.ErrUnexpectedEOF
 			}
 			return 0, err
+		}
+		if valid := width - i*segmentLen; valid < segmentLen && (b&segmentBits)>>uint(valid) != 0 {
+			return 0, fmt.Errorf("gocraft: variable-length integer has bits beyond %d-bit width", width)
 		}
 		u |= uint64(b&segmentBits) << (i * segmentLen)
 		if b&continueBit == 0 {

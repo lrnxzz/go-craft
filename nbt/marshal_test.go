@@ -1,6 +1,7 @@
 package nbt_test
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -102,5 +103,97 @@ func TestMarshalPassesThroughRawTags(t *testing.T) {
 func TestMarshalRejectsUnsupportedRoot(t *testing.T) {
 	if _, err := nbt.Marshal(42); err == nil {
 		t.Error("expected an error marshaling a non-compound root, got nil")
+	}
+}
+
+type leftFacet struct {
+	Shared int32 `nbt:"shared"`
+}
+
+type rightFacet struct {
+	Shared int32 `nbt:"shared"`
+}
+
+type ambiguous struct {
+	leftFacet
+	rightFacet
+	Unique int32 `nbt:"unique"`
+}
+
+type scalarKinds struct {
+	Signed   int    `nbt:"signed"`
+	Unsigned uint   `nbt:"unsigned"`
+	Byte     uint8  `nbt:"byte"`
+	Word     uint16 `nbt:"word"`
+	Dword    uint32 `nbt:"dword"`
+	Qword    uint64 `nbt:"qword"`
+}
+
+func TestMarshalRoundTripsPlainIntKinds(t *testing.T) {
+	want := scalarKinds{
+		Signed:   -42,
+		Unsigned: 42,
+		Byte:     255,
+		Word:     65535,
+		Dword:    4000000000,
+		Qword:    9000000000000000000,
+	}
+
+	encoded, err := nbt.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got scalarKinds
+	if err := nbt.Unmarshal(encoded, &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got != want {
+		t.Errorf("round trip yielded %+v, want %+v", got, want)
+	}
+}
+
+func TestEncodeCompoundIsDeterministic(t *testing.T) {
+	root := nbt.Compound{
+		"alpha":   nbt.Int(1),
+		"beta":    nbt.String("two"),
+		"gamma":   nbt.Long(3),
+		"delta":   nbt.Byte(4),
+		"epsilon": nbt.Float(5),
+	}
+
+	first := nbt.Encode(root)
+	for range 20 {
+		if got := nbt.Encode(root); !bytes.Equal(got, first) {
+			t.Fatalf("Encode is not deterministic:\n  got %x\nfirst %x", got, first)
+		}
+	}
+}
+
+func TestMarshalDropsAmbiguousEmbeddedField(t *testing.T) {
+	value := ambiguous{
+		Unique: 7,
+	}
+	value.leftFacet.Shared = 1
+	value.rightFacet.Shared = 2
+
+	encoded, err := nbt.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	decoded, err := nbt.Decode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := decoded["shared"]; ok {
+		t.Error(`ambiguous embedded field "shared" should be dropped, but was written`)
+	}
+
+	got, ok := nbt.Get[nbt.Int](decoded, "unique")
+	if !ok || got != 7 {
+		t.Errorf("unique = %v (ok=%t), want 7", got, ok)
 	}
 }

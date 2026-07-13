@@ -59,6 +59,7 @@ func installLogin(client *gocraft.Client) {
 
 func installConfiguration(client *gocraft.Client) {
 	gocraft.On[*ConfigKeepAlive](client, gocraft.StateConfiguration, onConfigKeepAlive)
+	gocraft.On[*ConfigPing](client, gocraft.StateConfiguration, onConfigPing)
 	gocraft.On[*FinishConfiguration](client, gocraft.StateConfiguration, onFinishConfiguration)
 	gocraft.On[*ConfigDisconnect](client, gocraft.StateConfiguration, onConfigDisconnect)
 }
@@ -108,6 +109,14 @@ func onConfigKeepAlive(c *gocraft.Client, p *ConfigKeepAlive) error {
 	}
 
 	return c.Send(reply)
+}
+
+func onConfigPing(c *gocraft.Client, p *ConfigPing) error {
+	pong := &ConfigPong{
+		PingID: p.PingID,
+	}
+
+	return c.Send(pong)
 }
 
 func onFinishConfiguration(c *gocraft.Client, p *FinishConfiguration) error {
