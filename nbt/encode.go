@@ -11,6 +11,13 @@ func Encode(root Compound) []byte {
 	return _encodePayload(buf, root)
 }
 
+func EncodeNamed(name string, root Compound) []byte {
+	buf := []byte{byte(TagCompound)}
+	buf = _encodeString(buf, name)
+
+	return _encodePayload(buf, root)
+}
+
 func _encodePayload(buf []byte, tag Tag) []byte {
 	switch value := tag.(type) {
 	case Byte:
@@ -78,7 +85,11 @@ func _encodeCompound(buf []byte, compound Compound) []byte {
 }
 
 func _encodeString(buf []byte, s string) []byte {
-	buf = binary.BigEndian.AppendUint16(buf, uint16(len(s)))
+	start := len(buf)
+	buf = append(buf, 0, 0)
+	buf = _encodeMUTF8(buf, s)
 
-	return append(buf, s...)
+	binary.BigEndian.PutUint16(buf[start:], uint16(len(buf)-start-2))
+
+	return buf
 }

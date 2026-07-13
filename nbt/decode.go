@@ -6,12 +6,16 @@ import (
 	"math"
 )
 
-const maxPrealloc = 1024
+const (
+	maxPrealloc = 1024
+	maxDepth    = 512
+)
 
 type decoder struct {
-	buf []byte
-	off int
-	err error
+	buf   []byte
+	off   int
+	depth int
+	err   error
 }
 
 func Decode(data []byte) (Compound, error) {
@@ -31,6 +35,40 @@ func Decode(data []byte) (Compound, error) {
 	}
 
 	return compound, nil
+}
+
+func DecodeNamed(data []byte) (string, Compound, error) {
+	dec := &decoder{buf: data}
+
+	root := dec._byte()
+	if dec.err != nil {
+		return "", nil, dec.err
+	}
+	if TagType(root) != TagCompound {
+		return "", nil, fmt.Errorf("nbt: root tag is %d, want compound", root)
+	}
+
+	name := dec._string()
+	compound := dec._compound()
+	if dec.err != nil {
+		return "", nil, dec.err
+	}
+
+	return name, compound, nil
+}
+
+func (d *decoder) _enter() bool {
+	d.depth++
+	if d.depth > maxDepth {
+		d._fail(fmt.Errorf("nbt: nesting exceeds %d", maxDepth))
+		return false
+	}
+
+	return true
+}
+
+func (d *decoder) _leave() {
+	d.depth--
 }
 
 func (d *decoder) _fail(err error) {
@@ -106,10 +144,21 @@ func (d *decoder) _string() string {
 		return ""
 	}
 
-	return string(raw)
+	decoded, err := _decodeMUTF8(raw)
+	if err != nil {
+		d._fail(err)
+		return ""
+	}
+
+	return decoded
 }
 
 func (d *decoder) _compound() Compound {
+	if !d._enter() {
+		return nil
+	}
+	defer d._leave()
+
 	compound := Compound{}
 
 	for {
@@ -124,6 +173,11 @@ func (d *decoder) _compound() Compound {
 }
 
 func (d *decoder) _list() List {
+	if !d._enter() {
+		return List{}
+	}
+	defer d._leave()
+
 	elem := TagType(d._byte())
 	n := d._length()
 
