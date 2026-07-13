@@ -9,7 +9,9 @@ import (
 
 func TestMarshalUnmarshalRoundTrip(t *testing.T) {
 	original := registry{
-		meta:    meta{Version: 7},
+		meta: meta{
+			Version: 7,
+		},
 		Name:    "nether",
 		Palette: []string{"netherrack", "soul_sand"},
 		Blocks:  []int64{10, 20, 30},
@@ -38,7 +40,9 @@ func TestMarshalUnmarshalRoundTrip(t *testing.T) {
 }
 
 func TestUnmarshalNamedRoundTrip(t *testing.T) {
-	original := meta{Version: 42}
+	original := meta{
+		Version: 42,
+	}
 
 	encoded, err := nbt.MarshalNamed("root", original)
 	if err != nil {

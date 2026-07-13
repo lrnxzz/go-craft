@@ -14,16 +14,18 @@ type Client struct {
 	conn     *Conn
 	protocol *Protocol
 	state    atomic.Uint32
-	closed   atomic.Bool
+	stopped  atomic.Bool
 	handlers map[handlerKey][]func(*Client, Packet) error
 }
 
 func NewClient(conn *Conn, protocol *Protocol) *Client {
-	return &Client{
+	client := &Client{
 		conn:     conn,
 		protocol: protocol,
 		handlers: make(map[handlerKey][]func(*Client, Packet) error),
 	}
+
+	return client
 }
 
 func (c *Client) State() State {
@@ -43,55 +45,68 @@ func (c *Client) SetCompression(threshold int) {
 }
 
 func (c *Client) Close() error {
-	c.closed.Store(true)
+	c.stopped.Store(true)
 
 	return c.conn.Close()
 }
 
-func On[T any, PT interface {
-	*T
-	Packet
-}](c *Client, state State, handler func(*Client, PT) error) {
-	var zero T
-	key := handlerKey{state: state, id: PT(&zero).ID()}
+func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
+	var prototype P
+	key := handlerKey{
+		state: state,
+		id:    prototype.ID(),
+	}
 
-	c.handlers[key] = append(c.handlers[key], func(client *Client, packet Packet) error {
-		return handler(client, packet.(PT))
-	})
+	wrapped := func(client *Client, packet Packet) error {
+		return handler(client, packet.(P))
+	}
+
+	c.handlers[key] = append(c.handlers[key], wrapped)
 }
 
 func (c *Client) Run(ctx context.Context) error {
-	defer context.AfterFunc(ctx, func() { c.conn.Close() })()
+	stop := context.AfterFunc(ctx, func() {
+		c.conn.Close()
+	})
+	defer stop()
 
 	for {
 		frame, err := c.conn.ReadFrame()
 		if err != nil {
-			switch {
-			case c.closed.Load():
-				return nil
-			case ctx.Err() != nil:
-				return ctx.Err()
-			default:
-				return err
-			}
+			return c.exit(ctx, err)
 		}
 
-		packet, ok, err := c.protocol.Decode(c.State(), Clientbound, frame)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			continue
-		}
-
-		if err := c.dispatch(packet); err != nil {
+		if err := c.receive(frame); err != nil {
 			return err
 		}
 	}
 }
 
+func (c *Client) receive(frame Frame) error {
+	packet, known, err := c.protocol.Decode(c.State(), Clientbound, frame)
+	if err != nil || !known {
+		return err
+	}
+
+	return c.dispatch(packet)
+}
+
+func (c *Client) exit(ctx context.Context, readErr error) error {
+	switch {
+	case c.stopped.Load():
+		return nil
+	case ctx.Err() != nil:
+		return ctx.Err()
+	default:
+		return readErr
+	}
+}
+
 func (c *Client) dispatch(packet Packet) error {
-	key := handlerKey{state: c.State(), id: packet.ID()}
+	key := handlerKey{
+		state: c.State(),
+		id:    packet.ID(),
+	}
 
 	for _, handler := range c.handlers[key] {
 		if err := handler(c, packet); err != nil {

@@ -30,7 +30,9 @@ type registry struct {
 
 func TestMarshalDecodesToExpectedTree(t *testing.T) {
 	value := registry{
-		meta:    meta{Version: 3},
+		meta: meta{
+			Version: 3,
+		},
 		Name:    "overworld",
 		Palette: []string{"stone", "dirt"},
 		Blocks:  []int64{1, 2, 3},

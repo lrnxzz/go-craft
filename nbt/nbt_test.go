@@ -31,8 +31,12 @@ func richTree() nbt.Compound {
 		"listOfCompounds": nbt.List{
 			Elem: nbt.TagCompound,
 			Items: []nbt.Tag{
-				nbt.Compound{"id": nbt.Int(1)},
-				nbt.Compound{"id": nbt.Int(2)},
+				nbt.Compound{
+					"id": nbt.Int(1),
+				},
+				nbt.Compound{
+					"id": nbt.Int(2),
+				},
 			},
 		},
 		"nested": nbt.Compound{

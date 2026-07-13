@@ -36,7 +36,7 @@ type JoinGame struct {
 	PortalCooldown      gocraft.VarInt
 }
 
-func (JoinGame) ID() int32 {
+func (*JoinGame) ID() int32 {
 	return 0x29
 }
 
@@ -58,7 +58,7 @@ type PlayKeepAlive struct {
 	KeepAliveID gocraft.Long
 }
 
-func (PlayKeepAlive) ID() int32 {
+func (*PlayKeepAlive) ID() int32 {
 	return 0x24
 }
 
@@ -74,7 +74,7 @@ type PlayKeepAliveResponse struct {
 	KeepAliveID gocraft.Long
 }
 
-func (PlayKeepAliveResponse) ID() int32 {
+func (*PlayKeepAliveResponse) ID() int32 {
 	return 0x15
 }
 
@@ -96,7 +96,7 @@ type SyncPlayerPosition struct {
 	TeleportID gocraft.VarInt
 }
 
-func (SyncPlayerPosition) ID() int32 {
+func (*SyncPlayerPosition) ID() int32 {
 	return 0x3E
 }
 
@@ -112,7 +112,7 @@ type ConfirmTeleport struct {
 	TeleportID gocraft.VarInt
 }
 
-func (ConfirmTeleport) ID() int32 {
+func (*ConfirmTeleport) ID() int32 {
 	return 0x00
 }
 
@@ -128,7 +128,7 @@ type PlayDisconnect struct {
 	Reason gocraft.NBT
 }
 
-func (PlayDisconnect) ID() int32 {
+func (*PlayDisconnect) ID() int32 {
 	return 0x1B
 }
 

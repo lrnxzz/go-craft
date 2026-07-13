@@ -13,7 +13,7 @@ type ClientInformation struct {
 	EnableServerListing gocraft.Bool
 }
 
-func (ClientInformation) ID() int32 {
+func (*ClientInformation) ID() int32 {
 	return 0x00
 }
 
@@ -31,7 +31,7 @@ type ConfigDisconnect struct {
 	Reason gocraft.NBT
 }
 
-func (ConfigDisconnect) ID() int32 {
+func (*ConfigDisconnect) ID() int32 {
 	return 0x01
 }
 
@@ -45,7 +45,7 @@ func (p *ConfigDisconnect) Decode(r *gocraft.Reader) error {
 
 type FinishConfiguration struct{}
 
-func (FinishConfiguration) ID() int32 {
+func (*FinishConfiguration) ID() int32 {
 	return 0x02
 }
 
@@ -61,7 +61,7 @@ type ConfigKeepAlive struct {
 	KeepAliveID gocraft.Long
 }
 
-func (ConfigKeepAlive) ID() int32 {
+func (*ConfigKeepAlive) ID() int32 {
 	return 0x03
 }
 
@@ -77,7 +77,7 @@ type ConfigPing struct {
 	PingID gocraft.Int
 }
 
-func (ConfigPing) ID() int32 {
+func (*ConfigPing) ID() int32 {
 	return 0x04
 }
 
@@ -93,7 +93,7 @@ type ConfigPong struct {
 	PingID gocraft.Int
 }
 
-func (ConfigPong) ID() int32 {
+func (*ConfigPong) ID() int32 {
 	return 0x04
 }
 
@@ -109,7 +109,7 @@ type RegistryData struct {
 	Codec gocraft.NBT
 }
 
-func (RegistryData) ID() int32 {
+func (*RegistryData) ID() int32 {
 	return 0x05
 }
 
@@ -125,7 +125,7 @@ type FeatureFlags struct {
 	Features gocraft.Slice[gocraft.Identifier]
 }
 
-func (FeatureFlags) ID() int32 {
+func (*FeatureFlags) ID() int32 {
 	return 0x08
 }
 

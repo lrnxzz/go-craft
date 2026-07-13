@@ -83,7 +83,9 @@ func TestLoginAcknowledgedIsEmpty(t *testing.T) {
 func TestUnknownPacketIsSkipped(t *testing.T) {
 	proto := v765.Protocol()
 
-	_, ok, err := proto.Decode(gocraft.StateLogin, gocraft.Clientbound, gocraft.Frame{ID: 0x7F})
+	_, ok, err := proto.Decode(gocraft.StateLogin, gocraft.Clientbound, gocraft.Frame{
+		ID: 0x7F,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

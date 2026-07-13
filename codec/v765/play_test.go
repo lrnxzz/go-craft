@@ -25,7 +25,11 @@ func TestJoinGameRoundTrip(t *testing.T) {
 		Flat:                true,
 		Death: gocraft.Some(v765.DeathLocation{
 			DimensionName: "minecraft:the_nether",
-			Location:      gocraft.Position{X: 10, Y: 64, Z: -20},
+			Location: gocraft.Position{
+				X: 10,
+				Y: 64,
+				Z: -20,
+			},
 		}),
 		PortalCooldown: 0,
 	}
@@ -69,13 +73,17 @@ func TestPlayKeepAliveDistinctIDsPerDirection(t *testing.T) {
 		t.Fatal("clientbound and serverbound play keep-alive must have distinct ids")
 	}
 
-	received := &v765.PlayKeepAlive{KeepAliveID: 555}
+	received := &v765.PlayKeepAlive{
+		KeepAliveID: 555,
+	}
 	echoed := encodeAndDecode(t, gocraft.StatePlay, gocraft.Clientbound, received)
 	if got := echoed.(*v765.PlayKeepAlive); got.KeepAliveID != 555 {
 		t.Errorf("keep alive id = %d, want 555", got.KeepAliveID)
 	}
 
-	reply := &v765.PlayKeepAliveResponse{KeepAliveID: 555}
+	reply := &v765.PlayKeepAliveResponse{
+		KeepAliveID: 555,
+	}
 	confirmed := encodeAndDecode(t, gocraft.StatePlay, gocraft.Serverbound, reply)
 	if got := confirmed.(*v765.PlayKeepAliveResponse); got.KeepAliveID != 555 {
 		t.Errorf("keep alive reply id = %d, want 555", got.KeepAliveID)
@@ -83,7 +91,9 @@ func TestPlayKeepAliveDistinctIDsPerDirection(t *testing.T) {
 }
 
 func TestConfirmTeleportRoundTrip(t *testing.T) {
-	original := &v765.ConfirmTeleport{TeleportID: 7}
+	original := &v765.ConfirmTeleport{
+		TeleportID: 7,
+	}
 
 	decoded := encodeAndDecode(t, gocraft.StatePlay, gocraft.Serverbound, original)
 

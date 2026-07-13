@@ -78,7 +78,9 @@ func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 }
 
 func loginWithIdentity(ctx context.Context, identityToken string) (minecraftToken, error) {
-	body, err := json.Marshal(identityRequest{IdentityToken: identityToken})
+	body, err := json.Marshal(identityRequest{
+		IdentityToken: identityToken,
+	})
 	if err != nil {
 		return minecraftToken{}, err
 	}

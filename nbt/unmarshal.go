@@ -24,7 +24,9 @@ func unmarshalRoot(data []byte, named bool, v any) (string, error) {
 		return "", fmt.Errorf("nbt: unmarshal target must be a non-nil pointer, got %T", v)
 	}
 
-	dec := &decoder{buf: data}
+	dec := &decoder{
+		buf: data,
+	}
 	if TagType(dec.u8()) != TagCompound {
 		if dec.err != nil {
 			return "", dec.err
@@ -37,7 +39,9 @@ func unmarshalRoot(data []byte, named bool, v any) (string, error) {
 		name = dec.str()
 	}
 
-	u := unmarshaler{dec: dec}
+	u := unmarshaler{
+		dec: dec,
+	}
 	u.compound(target.Elem())
 
 	return name, dec.err

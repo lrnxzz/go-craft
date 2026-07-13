@@ -31,7 +31,11 @@ func (p *Position) Decode(r *Reader) error {
 }
 
 func (p Position) Add(dx, dy, dz int32) Position {
-	return Position{X: p.X + dx, Y: p.Y + dy, Z: p.Z + dz}
+	return Position{
+		X: p.X + dx,
+		Y: p.Y + dy,
+		Z: p.Z + dz,
+	}
 }
 
 func (p Position) String() string {

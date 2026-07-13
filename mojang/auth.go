@@ -14,9 +14,3 @@ func (s Session) Online() bool {
 type Authenticator interface {
 	Authenticate(ctx context.Context) (Session, error)
 }
-
-var (
-	_ Authenticator = Microsoft{}
-	_ Authenticator = Offline{}
-	_ Authenticator = Yggdrasil{}
-)

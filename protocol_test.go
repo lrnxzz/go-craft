@@ -11,7 +11,7 @@ type keepAlivePacket struct {
 	Label gocraft.String
 }
 
-func (keepAlivePacket) ID() int32 {
+func (*keepAlivePacket) ID() int32 {
 	return 0x2A
 }
 
@@ -31,7 +31,10 @@ func TestProtocolRoundTrip(t *testing.T) {
 	proto := gocraft.NewProtocol()
 	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
 
-	original := &keepAlivePacket{Nonce: 99, Label: "alive"}
+	original := &keepAlivePacket{
+		Nonce: 99,
+		Label: "alive",
+	}
 	frame := gocraft.EncodeFrame(original)
 
 	packet, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, frame)
@@ -54,7 +57,9 @@ func TestProtocolRoundTrip(t *testing.T) {
 func TestProtocolUnknownPacket(t *testing.T) {
 	proto := gocraft.NewProtocol()
 
-	_, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.Frame{ID: 0x99})
+	_, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.Frame{
+		ID: 0x99,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

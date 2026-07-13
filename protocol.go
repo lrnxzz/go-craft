@@ -67,20 +67,25 @@ func NewProtocol() *Protocol {
 	return &Protocol{factories: make(map[packetKey]func() Packet)}
 }
 
-func Bind[Value any, Ptr interface {
-	*Value
-	Packet
-}](proto *Protocol, state State, dir Direction) {
+func Bind[T any](proto *Protocol, state State, dir Direction) {
 	factory := func() Packet {
-		return Ptr(new(Value))
+		return any(new(T)).(Packet)
 	}
 
-	key := packetKey{state: state, dir: dir, id: factory().ID()}
+	key := packetKey{
+		state: state,
+		dir:   dir,
+		id:    factory().ID(),
+	}
 	proto.factories[key] = factory
 }
 
 func (proto *Protocol) New(state State, dir Direction, id int32) (Packet, bool) {
-	key := packetKey{state: state, dir: dir, id: id}
+	key := packetKey{
+		state: state,
+		dir:   dir,
+		id:    id,
+	}
 
 	factory, ok := proto.factories[key]
 	if !ok {
@@ -104,5 +109,8 @@ func (proto *Protocol) Decode(state State, dir Direction, frame Frame) (Packet, 
 }
 
 func EncodeFrame(packet Packet) Frame {
-	return Frame{ID: VarInt(packet.ID()), Payload: packet.Append(nil)}
+	return Frame{
+		ID:      VarInt(packet.ID()),
+		Payload: packet.Append(nil),
+	}
 }

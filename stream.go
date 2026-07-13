@@ -9,7 +9,9 @@ type Reader struct {
 }
 
 func NewReader(payload []byte) *Reader {
-	return &Reader{buf: payload}
+	return &Reader{
+		buf: payload,
+	}
 }
 
 func (r *Reader) Err() error {

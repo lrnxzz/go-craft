@@ -7,7 +7,7 @@ type LoginStart struct {
 	UUID     gocraft.UUID
 }
 
-func (LoginStart) ID() int32 {
+func (*LoginStart) ID() int32 {
 	return 0x00
 }
 
@@ -23,7 +23,7 @@ type EncryptionBegin struct {
 	ServerID gocraft.String
 }
 
-func (EncryptionBegin) ID() int32 {
+func (*EncryptionBegin) ID() int32 {
 	return 0x01
 }
 
@@ -43,7 +43,7 @@ func (p *EncryptionBegin) Decode(r *gocraft.Reader) error {
 
 type LoginAcknowledged struct{}
 
-func (LoginAcknowledged) ID() int32 {
+func (*LoginAcknowledged) ID() int32 {
 	return 0x03
 }
 
@@ -75,7 +75,7 @@ type LoginSuccess struct {
 	Properties gocraft.Slice[Property]
 }
 
-func (LoginSuccess) ID() int32 {
+func (*LoginSuccess) ID() int32 {
 	return 0x02
 }
 
@@ -91,7 +91,7 @@ type SetCompression struct {
 	Threshold gocraft.VarInt
 }
 
-func (SetCompression) ID() int32 {
+func (*SetCompression) ID() int32 {
 	return 0x03
 }
 
@@ -107,7 +107,7 @@ type LoginDisconnect struct {
 	Reason gocraft.String
 }
 
-func (LoginDisconnect) ID() int32 {
+func (*LoginDisconnect) ID() int32 {
 	return 0x00
 }
 

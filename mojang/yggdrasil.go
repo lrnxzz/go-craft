@@ -53,7 +53,10 @@ type Yggdrasil struct {
 
 func (y Yggdrasil) Authenticate(ctx context.Context) (Session, error) {
 	body, err := json.Marshal(yggdrasilRequest{
-		Agent:       yggdrasilAgent{Name: "Minecraft", Version: 1},
+		Agent: yggdrasilAgent{
+			Name:    "Minecraft",
+			Version: 1,
+		},
 		Username:    y.Email,
 		Password:    y.Password,
 		ClientToken: y.ClientToken,

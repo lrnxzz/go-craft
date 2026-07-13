@@ -9,7 +9,7 @@ type Handshake struct {
 	NextState       gocraft.VarInt
 }
 
-func (Handshake) ID() int32 {
+func (*Handshake) ID() int32 {
 	return 0x00
 }
 

@@ -20,7 +20,7 @@ func TestClientDispatchesReceivedPacket(t *testing.T) {
 	client.SetState(gocraft.StatePlay)
 
 	got := make(chan keepAlivePacket, 1)
-	gocraft.On[keepAlivePacket](client, gocraft.StatePlay, func(c *gocraft.Client, p *keepAlivePacket) error {
+	gocraft.On[*keepAlivePacket](client, gocraft.StatePlay, func(c *gocraft.Client, p *keepAlivePacket) error {
 		got <- *p
 
 		return c.Close()
@@ -28,7 +28,10 @@ func TestClientDispatchesReceivedPacket(t *testing.T) {
 
 	go func() {
 		server := gocraft.NewConn(serverSide)
-		server.WriteFrame(gocraft.EncodeFrame(&keepAlivePacket{Nonce: 7, Label: "hi"}))
+		server.WriteFrame(gocraft.EncodeFrame(&keepAlivePacket{
+			Nonce: 7,
+			Label: "hi",
+		}))
 	}()
 
 	if err := client.Run(context.Background()); err != nil {
@@ -59,7 +62,9 @@ func TestClientSkipsUnhandledPackets(t *testing.T) {
 
 	go func() {
 		server := gocraft.NewConn(serverSide)
-		server.WriteFrame(gocraft.EncodeFrame(&keepAlivePacket{Nonce: 1}))
+		server.WriteFrame(gocraft.EncodeFrame(&keepAlivePacket{
+			Nonce: 1,
+		}))
 	}()
 
 	if err := client.Run(ctx); !errors.Is(err, context.DeadlineExceeded) {
@@ -85,7 +90,10 @@ func TestClientSendEncodesFrame(t *testing.T) {
 
 	client := gocraft.NewClient(gocraft.NewConn(clientSide), gocraft.NewProtocol())
 
-	go client.Send(&keepAlivePacket{Nonce: 9, Label: "x"})
+	go client.Send(&keepAlivePacket{
+		Nonce: 9,
+		Label: "x",
+	})
 
 	server := gocraft.NewConn(serverSide)
 	frame, err := server.ReadFrame()

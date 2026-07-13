@@ -29,7 +29,9 @@ func TestClientInformationRoundTrip(t *testing.T) {
 }
 
 func TestConfigKeepAliveRoundTripBothDirections(t *testing.T) {
-	original := &v765.ConfigKeepAlive{KeepAliveID: 1234567890}
+	original := &v765.ConfigKeepAlive{
+		KeepAliveID: 1234567890,
+	}
 
 	for _, dir := range []gocraft.Direction{gocraft.Clientbound, gocraft.Serverbound} {
 		decoded := encodeAndDecode(t, gocraft.StateConfiguration, dir, original)
@@ -42,7 +44,9 @@ func TestConfigKeepAliveRoundTripBothDirections(t *testing.T) {
 
 func TestConfigDisconnectCarriesNBTReason(t *testing.T) {
 	original := &v765.ConfigDisconnect{
-		Reason: gocraft.NBT{"text": nbt.String("kicked")},
+		Reason: gocraft.NBT{
+			"text": nbt.String("kicked"),
+		},
 	}
 
 	decoded := encodeAndDecode(t, gocraft.StateConfiguration, gocraft.Clientbound, original)
@@ -55,7 +59,9 @@ func TestConfigDisconnectCarriesNBTReason(t *testing.T) {
 func TestRegistryDataCarriesNBTCodec(t *testing.T) {
 	original := &v765.RegistryData{
 		Codec: gocraft.NBT{
-			"minecraft:dimension_type": nbt.Compound{"type": nbt.String("minecraft:dimension_type")},
+			"minecraft:dimension_type": nbt.Compound{
+				"type": nbt.String("minecraft:dimension_type"),
+			},
 		},
 	}
 

@@ -25,7 +25,9 @@ func Decode(data []byte) (Compound, error) {
 }
 
 func DecodePrefix(data []byte) (Compound, int, error) {
-	dec := &decoder{buf: data}
+	dec := &decoder{
+		buf: data,
+	}
 
 	root := dec.u8()
 	if dec.err != nil {
@@ -44,7 +46,9 @@ func DecodePrefix(data []byte) (Compound, int, error) {
 }
 
 func DecodeNamed(data []byte) (string, Compound, error) {
-	dec := &decoder{buf: data}
+	dec := &decoder{
+		buf: data,
+	}
 
 	root := dec.u8()
 	if dec.err != nil {
@@ -195,7 +199,10 @@ func (d *decoder) list() List {
 		}
 	}
 
-	return List{Elem: elem, Items: items}
+	return List{
+		Elem:  elem,
+		Items: items,
+	}
 }
 
 func (d *decoder) payload(tag TagType) Tag {

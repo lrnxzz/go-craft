@@ -9,7 +9,9 @@ import (
 )
 
 func TestOfflineProfileIsDeterministic(t *testing.T) {
-	provider := mojang.Offline{Username: "Bot01"}
+	provider := mojang.Offline{
+		Username: "Bot01",
+	}
 
 	first, err := provider.Authenticate(context.Background())
 	if err != nil {
@@ -36,7 +38,9 @@ func TestOfflineUUIDLayout(t *testing.T) {
 	usernames := []string{"Bot01", "Notch", "jeb_", "steve"}
 
 	for _, username := range usernames {
-		provider := mojang.Offline{Username: username}
+		provider := mojang.Offline{
+			Username: username,
+		}
 
 		session, err := provider.Authenticate(context.Background())
 		if err != nil {

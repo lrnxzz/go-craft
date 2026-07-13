@@ -104,7 +104,10 @@ func (c *Conn) ReadFrame() (Frame, error) {
 		return Frame{}, err
 	}
 
-	return Frame{ID: id, Payload: r.Rest()}, nil
+	return Frame{
+		ID:      id,
+		Payload: r.Rest(),
+	}, nil
 }
 
 func (c *Conn) frame(body []byte) ([]byte, error) {
