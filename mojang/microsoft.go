@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -39,6 +40,7 @@ func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 	msa := NewMSA(m.ClientID)
 	msa.Flow = flow
 
+	slog.Debug("requesting device code")
 	code, err := msa.RequestDeviceCode(ctx)
 	if err != nil {
 		return Session{}, err
@@ -48,6 +50,7 @@ func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 		m.Prompt(code)
 	}
 
+	slog.Debug("awaiting authorization")
 	tokens, err := msa.AwaitToken(ctx, code)
 	if err != nil {
 		return Session{}, err
@@ -56,11 +59,13 @@ func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 	xbox := NewXbox()
 	xbox.Preamble = flow.XboxPreamble
 
+	slog.Debug("authenticating with xbox")
 	identity, err := xbox.Identity(ctx, tokens.AccessToken)
 	if err != nil {
 		return Session{}, err
 	}
 
+	slog.Debug("logging in to minecraft")
 	minecraft, err := loginWithIdentity(ctx, identity)
 	if err != nil {
 		return Session{}, err
@@ -70,6 +75,8 @@ func (m Microsoft) Authenticate(ctx context.Context) (Session, error) {
 	if err != nil {
 		return Session{}, err
 	}
+
+	slog.Debug("logged in", "name", profile.Name)
 
 	return Session{
 		AccessToken: minecraft.AccessToken,

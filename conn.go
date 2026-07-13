@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"sync/atomic"
 	"time"
@@ -36,6 +37,8 @@ func Dial(ctx context.Context, address string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	slog.Debug("connected", "address", address)
 
 	return NewConn(transport), nil
 }
