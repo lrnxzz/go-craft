@@ -67,9 +67,14 @@ func NewProtocol() *Protocol {
 	return &Protocol{factories: make(map[packetKey]func() Packet)}
 }
 
-func Bind[T any](proto *Protocol, state State, dir Direction) {
+type packetPtr[T any] interface {
+	*T
+	Packet
+}
+
+func Bind[T any, P packetPtr[T]](proto *Protocol, state State, dir Direction) {
 	factory := func() Packet {
-		return any(new(T)).(Packet)
+		return P(new(T))
 	}
 
 	key := packetKey{
