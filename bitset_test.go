@@ -1,0 +1,78 @@
+package gocraft_test
+
+import (
+	"reflect"
+	"testing"
+
+	gocraft "github.com/lrnxzz/go-craft"
+)
+
+func TestBitSetSetGetClear(t *testing.T) {
+	var set gocraft.BitSet
+
+	indices := []int{0, 1, 63, 64, 130, 200}
+	for _, i := range indices {
+		set.Set(i)
+	}
+
+	for _, i := range indices {
+		if !set.Get(i) {
+			t.Errorf("Get(%d) = false after Set, want true", i)
+		}
+	}
+
+	if got := set.Count(); got != len(indices) {
+		t.Errorf("Count() = %d, want %d", got, len(indices))
+	}
+	if set.Get(5) {
+		t.Error("Get(5) = true, want false (never set)")
+	}
+
+	set.Clear(64)
+	if set.Get(64) {
+		t.Error("Get(64) = true after Clear, want false")
+	}
+	if got := set.Count(); got != len(indices)-1 {
+		t.Errorf("Count() after Clear = %d, want %d", got, len(indices)-1)
+	}
+}
+
+func TestBitSetRoundTrip(t *testing.T) {
+	var want gocraft.BitSet
+	for _, i := range []int{3, 70, 128, 255} {
+		want.Set(i)
+	}
+
+	var got gocraft.BitSet
+	if err := gocraft.Unmarshal(want.Append(nil), &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("round trip yielded %v, want %v", got, want)
+	}
+}
+
+func TestFixedBitSetRoundTrip(t *testing.T) {
+	const bitCount = 26
+
+	want := gocraft.NewFixedBitSet(bitCount)
+	for _, i := range []int{0, 7, 8, 25} {
+		want.Set(i)
+	}
+
+	got, err := gocraft.DecodeFixedBitSet(gocraft.NewReader(want.Append(nil)), bitCount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("round trip yielded %v, want %v", got, want)
+	}
+	if got.Count() != 4 {
+		t.Errorf("Count() = %d, want 4", got.Count())
+	}
+	if got.Len() < bitCount {
+		t.Errorf("Len() = %d, want at least %d", got.Len(), bitCount)
+	}
+}
