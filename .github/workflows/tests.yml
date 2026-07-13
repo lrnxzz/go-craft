@@ -1,0 +1,57 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: vet
+        run: |
+          for module in . nbt mojang codec/v765 cli; do
+            (cd "$module" && go vet ./...) || exit 1
+          done
+      - name: test
+        run: |
+          for module in . nbt mojang codec/v765 cli; do
+            (cd "$module" && go test -race -count=1 ./...) || exit 1
+          done
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      minecraft:
+        image: itzg/minecraft-server:java21
+        env:
+          EULA: "TRUE"
+          TYPE: "PAPER"
+          VERSION: "1.20.4"
+          ONLINE_MODE: "FALSE"
+        ports:
+          - 25565:25565
+        options: >-
+          --health-cmd mc-health
+          --health-interval 15s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 60s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: join
+        env:
+          GOCRAFT_IT_ADDR: localhost:25565
+        run: |
+          for dir in $(find codec -name session_test.go -printf '%h\n' | sort -u); do
+            echo "# $dir"
+            (cd "$dir" && go test -count=1 -v ./...) || exit 1
+          done
