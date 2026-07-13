@@ -96,22 +96,22 @@ func Ping(ctx context.Context, address string) (Status, error) {
 		}
 	}
 
-	handshake := Packet{
+	handshake := Frame{
 		ID:      handshakeID,
 		Payload: Marshal(statusProtocol, host, port, stateStatus),
 	}
-	if err := conn.WritePacket(handshake); err != nil {
+	if err := conn.WriteFrame(handshake); err != nil {
 		return Status{}, err
 	}
 
-	request := Packet{
+	request := Frame{
 		ID: statusRequestID,
 	}
-	if err := conn.WritePacket(request); err != nil {
+	if err := conn.WriteFrame(request); err != nil {
 		return Status{}, err
 	}
 
-	response, err := conn.ReadPacket()
+	response, err := conn.ReadFrame()
 	if err != nil {
 		return Status{}, err
 	}
@@ -143,15 +143,15 @@ func _measureLatency(conn *Conn) (time.Duration, error) {
 	nonce := Long(time.Now().UnixMilli())
 	start := time.Now()
 
-	ping := Packet{
+	ping := Frame{
 		ID:      statusPingID,
 		Payload: Marshal(nonce),
 	}
-	if err := conn.WritePacket(ping); err != nil {
+	if err := conn.WriteFrame(ping); err != nil {
 		return 0, err
 	}
 
-	pong, err := conn.ReadPacket()
+	pong, err := conn.ReadFrame()
 	if err != nil {
 		return 0, err
 	}

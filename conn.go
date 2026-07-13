@@ -17,7 +17,7 @@ const (
 	noCompression  = -1
 )
 
-type Packet struct {
+type Frame struct {
 	ID      VarInt
 	Payload []byte
 }
@@ -59,7 +59,7 @@ func (c *Conn) Close() error {
 	return c.transport.Close()
 }
 
-func (c *Conn) WritePacket(p Packet) error {
+func (c *Conn) WriteFrame(p Frame) error {
 	body := p.ID.Append(nil)
 	body = append(body, p.Payload...)
 
@@ -73,24 +73,24 @@ func (c *Conn) WritePacket(p Packet) error {
 	return err
 }
 
-func (c *Conn) ReadPacket() (Packet, error) {
+func (c *Conn) ReadFrame() (Frame, error) {
 	frameLen, err := ReadVar[VarInt](c.reader)
 	if err != nil {
-		return Packet{}, err
+		return Frame{}, err
 	}
 	if frameLen <= 0 || frameLen > maxFrameLen {
-		return Packet{}, fmt.Errorf("gocraft: frame of %d bytes is out of range", frameLen)
+		return Frame{}, fmt.Errorf("gocraft: frame of %d bytes is out of range", frameLen)
 	}
 
 	frame := make([]byte, frameLen)
 	if _, err := io.ReadFull(c.reader, frame); err != nil {
-		return Packet{}, err
+		return Frame{}, err
 	}
 
 	body := frame
 	if c.threshold != noCompression {
 		if body, err = c.inflate(frame); err != nil {
-			return Packet{}, err
+			return Frame{}, err
 		}
 	}
 
@@ -98,10 +98,10 @@ func (c *Conn) ReadPacket() (Packet, error) {
 
 	var id VarInt
 	if err := id.Decode(r); err != nil {
-		return Packet{}, err
+		return Frame{}, err
 	}
 
-	return Packet{ID: id, Payload: r.Rest()}, nil
+	return Frame{ID: id, Payload: r.Rest()}, nil
 }
 
 func (c *Conn) frame(body []byte) ([]byte, error) {

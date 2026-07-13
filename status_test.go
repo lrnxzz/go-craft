@@ -19,31 +19,31 @@ func _serveStatus(listener net.Listener, response gocraft.String) {
 
 	server := gocraft.NewConn(transport)
 
-	if _, err := server.ReadPacket(); err != nil {
+	if _, err := server.ReadFrame(); err != nil {
 		return
 	}
-	if _, err := server.ReadPacket(); err != nil {
+	if _, err := server.ReadFrame(); err != nil {
 		return
 	}
 
-	status := gocraft.Packet{
+	status := gocraft.Frame{
 		ID:      0x00,
 		Payload: gocraft.Marshal(response),
 	}
-	if err := server.WritePacket(status); err != nil {
+	if err := server.WriteFrame(status); err != nil {
 		return
 	}
 
-	ping, err := server.ReadPacket()
+	ping, err := server.ReadFrame()
 	if err != nil {
 		return
 	}
 
-	pong := gocraft.Packet{
+	pong := gocraft.Frame{
 		ID:      0x01,
 		Payload: ping.Payload,
 	}
-	server.WritePacket(pong)
+	server.WriteFrame(pong)
 }
 
 func TestPing(t *testing.T) {
