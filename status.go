@@ -11,12 +11,13 @@ import (
 )
 
 const (
-	handshakeID     VarInt = 0x00
-	statusRequestID VarInt = 0x00
-	statusPingID    VarInt = 0x01
+	handshakeID      VarInt = 0x00
+	statusRequestID  VarInt = 0x00
+	statusResponseID VarInt = 0x00
+	statusPingID     VarInt = 0x01
 
-	stateStatus    VarInt = 1
-	statusProtocol VarInt = 765
+	stateStatus   VarInt = 1
+	statusVersion VarInt = -1
 
 	defaultPort UShort = 25565
 )
@@ -98,7 +99,7 @@ func Ping(ctx context.Context, address string) (Status, error) {
 
 	handshake := Frame{
 		ID:      handshakeID,
-		Payload: Marshal(statusProtocol, host, port, stateStatus),
+		Payload: Marshal(statusVersion, host, port, stateStatus),
 	}
 	if err := conn.WriteFrame(handshake); err != nil {
 		return Status{}, err
@@ -115,7 +116,7 @@ func Ping(ctx context.Context, address string) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	if response.ID != statusRequestID {
+	if response.ID != statusResponseID {
 		return Status{}, fmt.Errorf("gocraft: unexpected packet 0x%02x during status exchange", response.ID)
 	}
 
