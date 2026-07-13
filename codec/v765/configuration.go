@@ -73,6 +73,22 @@ func (p *ConfigKeepAlive) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.KeepAliveID)
 }
 
+type ConfigKeepAliveResponse struct {
+	KeepAliveID gocraft.Long
+}
+
+func (*ConfigKeepAliveResponse) ID() int32 {
+	return 0x03
+}
+
+func (p ConfigKeepAliveResponse) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.KeepAliveID)
+}
+
+func (p *ConfigKeepAliveResponse) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.KeepAliveID)
+}
+
 type ConfigPing struct {
 	PingID gocraft.Int
 }

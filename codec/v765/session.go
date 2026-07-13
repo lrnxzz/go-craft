@@ -104,7 +104,7 @@ func onLoginDisconnect(c *gocraft.Client, p *LoginDisconnect) error {
 }
 
 func onConfigKeepAlive(c *gocraft.Client, p *ConfigKeepAlive) error {
-	reply := &ConfigKeepAlive{
+	reply := &ConfigKeepAliveResponse{
 		KeepAliveID: p.KeepAliveID,
 	}
 

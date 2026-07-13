@@ -19,7 +19,7 @@ func Protocol() *gocraft.Protocol {
 
 	gocraft.Bind[ClientInformation](proto, gocraft.StateConfiguration, gocraft.Serverbound)
 	gocraft.Bind[FinishConfiguration](proto, gocraft.StateConfiguration, gocraft.Serverbound)
-	gocraft.Bind[ConfigKeepAlive](proto, gocraft.StateConfiguration, gocraft.Serverbound)
+	gocraft.Bind[ConfigKeepAliveResponse](proto, gocraft.StateConfiguration, gocraft.Serverbound)
 	gocraft.Bind[ConfigPong](proto, gocraft.StateConfiguration, gocraft.Serverbound)
 
 	gocraft.Bind[ConfigDisconnect](proto, gocraft.StateConfiguration, gocraft.Clientbound)

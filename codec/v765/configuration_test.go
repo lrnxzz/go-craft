@@ -36,23 +36,34 @@ func TestClientInformationPreservesSettings(t *testing.T) {
 }
 
 func TestConfigKeepAliveDecodesInBothDirections(t *testing.T) {
-	original := &v765.ConfigKeepAlive{
+	proto := v765.Protocol()
+
+	challenge := &v765.ConfigKeepAlive{
 		KeepAliveID: 1234567890,
 	}
+	decoded, ok, err := proto.Decode(gocraft.StateConfiguration, gocraft.Clientbound, gocraft.EncodeFrame(challenge))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("config keep-alive not registered clientbound")
+	}
+	if got := decoded.(*v765.ConfigKeepAlive); *got != *challenge {
+		t.Errorf("clientbound: got %+v, want %+v", got, challenge)
+	}
 
-	for _, dir := range []gocraft.Direction{gocraft.Clientbound, gocraft.Serverbound} {
-		proto := v765.Protocol()
-		decoded, ok, err := proto.Decode(gocraft.StateConfiguration, dir, gocraft.EncodeFrame(original))
-		if err != nil {
-			t.Fatalf("%s: %v", dir, err)
-		}
-		if !ok {
-			t.Fatalf("%s: keep-alive not registered", dir)
-		}
-
-		if got := decoded.(*v765.ConfigKeepAlive); *got != *original {
-			t.Errorf("%s: got %+v, want %+v", dir, got, original)
-		}
+	response := &v765.ConfigKeepAliveResponse{
+		KeepAliveID: 1234567890,
+	}
+	decoded, ok, err = proto.Decode(gocraft.StateConfiguration, gocraft.Serverbound, gocraft.EncodeFrame(response))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("config keep-alive response not registered serverbound")
+	}
+	if got := decoded.(*v765.ConfigKeepAliveResponse); *got != *response {
+		t.Errorf("serverbound: got %+v, want %+v", got, response)
 	}
 }
 
