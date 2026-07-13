@@ -25,7 +25,7 @@ func encodeAndDecode(t *testing.T, state gocraft.State, dir gocraft.Direction, p
 	return decoded
 }
 
-func TestHandshakeRoundTrip(t *testing.T) {
+func TestHandshakeCarriesConnectionParameters(t *testing.T) {
 	original := &v765.Handshake{
 		ProtocolVersion: v765.ProtocolVersion,
 		ServerAddress:   "mc.local",
@@ -40,7 +40,7 @@ func TestHandshakeRoundTrip(t *testing.T) {
 	}
 }
 
-func TestLoginStartRoundTrip(t *testing.T) {
+func TestLoginStartCarriesUsernameAndUUID(t *testing.T) {
 	original := &v765.LoginStart{
 		Username: "gocraft",
 		UUID:     gocraft.UUID{0x11, 0x22, 0x33},
@@ -53,7 +53,7 @@ func TestLoginStartRoundTrip(t *testing.T) {
 	}
 }
 
-func TestLoginSuccessRoundTrip(t *testing.T) {
+func TestLoginSuccessCarriesProfileProperties(t *testing.T) {
 	original := &v765.LoginSuccess{
 		UUID:     gocraft.UUID{0xAB, 0xCD},
 		Username: "gocraft",

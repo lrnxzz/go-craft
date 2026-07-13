@@ -129,7 +129,7 @@ type scalarKinds struct {
 	Qword    uint64 `nbt:"qword"`
 }
 
-func TestMarshalRoundTripsPlainIntKinds(t *testing.T) {
+func TestMarshalRecoversPlainIntKinds(t *testing.T) {
 	want := scalarKinds{
 		Signed:   -42,
 		Unsigned: 42,

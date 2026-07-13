@@ -46,7 +46,7 @@ func richTree() nbt.Compound {
 	}
 }
 
-func TestEncodeDecodeRoundTrip(t *testing.T) {
+func TestDecodeRecoversEncodedTree(t *testing.T) {
 	original := richTree()
 
 	decoded, err := nbt.Decode(nbt.Encode(original))

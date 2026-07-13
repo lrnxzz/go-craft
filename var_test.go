@@ -58,7 +58,7 @@ func TestAppendVarAgainstStdlib(t *testing.T) {
 	}
 }
 
-func TestReadVarRoundTrip(t *testing.T) {
+func TestReadVarRecoversEncodedValue(t *testing.T) {
 	for _, value := range boundaries[int32]() {
 		got, err := gocraft.ReadVar[int32](bytes.NewReader(gocraft.AppendVar(nil, value)))
 

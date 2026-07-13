@@ -9,7 +9,7 @@ import (
 	"github.com/lrnxzz/go-craft/nbt"
 )
 
-func TestStreamRoundTrip(t *testing.T) {
+func TestReadRecoversWrittenTree(t *testing.T) {
 	original := richTree()
 
 	var buf bytes.Buffer

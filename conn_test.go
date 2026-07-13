@@ -9,7 +9,7 @@ import (
 	gocraft "github.com/lrnxzz/go-craft"
 )
 
-func TestConnRoundTrip(t *testing.T) {
+func TestConnPreservesFramesAcrossThresholds(t *testing.T) {
 	tests := []struct {
 		threshold int
 		packet    gocraft.Frame

@@ -6,7 +6,7 @@ import (
 	gocraft "github.com/lrnxzz/go-craft"
 )
 
-func TestPositionRoundTrip(t *testing.T) {
+func TestPositionRecoversPackedCoordinates(t *testing.T) {
 	positions := []gocraft.Position{
 		{X: 0, Y: 0, Z: 0},
 		{X: 1, Y: 2, Z: 3},
@@ -62,7 +62,7 @@ func TestAngleDegrees(t *testing.T) {
 	}
 }
 
-func TestAngleRoundTrip(t *testing.T) {
+func TestAngleRecoversEncodedValue(t *testing.T) {
 	for _, want := range []gocraft.Angle{0, 1, 64, 128, 200, 255} {
 		var got gocraft.Angle
 

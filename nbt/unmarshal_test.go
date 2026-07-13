@@ -7,7 +7,7 @@ import (
 	"github.com/lrnxzz/go-craft/nbt"
 )
 
-func TestMarshalUnmarshalRoundTrip(t *testing.T) {
+func TestUnmarshalRecoversMarshaledStruct(t *testing.T) {
 	original := registry{
 		meta: meta{
 			Version: 7,
@@ -39,7 +39,7 @@ func TestMarshalUnmarshalRoundTrip(t *testing.T) {
 	}
 }
 
-func TestUnmarshalNamedRoundTrip(t *testing.T) {
+func TestUnmarshalNamedRecoversNameAndValue(t *testing.T) {
 	original := meta{
 		Version: 42,
 	}

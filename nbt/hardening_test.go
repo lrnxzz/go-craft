@@ -7,7 +7,7 @@ import (
 	"github.com/lrnxzz/go-craft/nbt"
 )
 
-func TestEncodeDecodeNamedRoundTrip(t *testing.T) {
+func TestDecodeNamedRecoversNameAndTree(t *testing.T) {
 	root := nbt.Compound{
 		"level": nbt.String("overworld"),
 		"seed":  nbt.Long(-4096),

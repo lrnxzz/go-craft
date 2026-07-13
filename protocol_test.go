@@ -27,7 +27,7 @@ func (p *keepAlivePacket) Decode(r *gocraft.Reader) error {
 	return p.Label.Decode(r)
 }
 
-func TestProtocolRoundTrip(t *testing.T) {
+func TestProtocolDecodesRegisteredPacket(t *testing.T) {
 	proto := gocraft.NewProtocol()
 	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
 

@@ -8,7 +8,7 @@ import (
 	"github.com/lrnxzz/go-craft/codec/v765"
 )
 
-func TestJoinGameRoundTrip(t *testing.T) {
+func TestJoinGamePreservesAllFields(t *testing.T) {
 	original := &v765.JoinGame{
 		EntityID:            42,
 		Hardcore:            false,
@@ -90,7 +90,7 @@ func TestPlayKeepAliveDistinctIDsPerDirection(t *testing.T) {
 	}
 }
 
-func TestConfirmTeleportRoundTrip(t *testing.T) {
+func TestConfirmTeleportCarriesTeleportID(t *testing.T) {
 	original := &v765.ConfirmTeleport{
 		TeleportID: 7,
 	}

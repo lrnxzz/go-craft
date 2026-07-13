@@ -77,7 +77,7 @@ func TestIdentifierValid(t *testing.T) {
 	}
 }
 
-func TestIdentifierRoundTrip(t *testing.T) {
+func TestIdentifierRecoversEncodedValue(t *testing.T) {
 	want := gocraft.NewIdentifier("mymod", "block/custom")
 
 	var got gocraft.Identifier

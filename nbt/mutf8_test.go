@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestMUTF8RoundTrip(t *testing.T) {
+func TestMUTF8RecoversEncodedString(t *testing.T) {
 	inputs := []string{
 		"",
 		"hello",

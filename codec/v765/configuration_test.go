@@ -9,7 +9,7 @@ import (
 	"github.com/lrnxzz/go-craft/nbt"
 )
 
-func TestClientInformationRoundTrip(t *testing.T) {
+func TestClientInformationPreservesSettings(t *testing.T) {
 	original := &v765.ClientInformation{
 		Locale:              "en_us",
 		ViewDistance:        12,
@@ -28,7 +28,7 @@ func TestClientInformationRoundTrip(t *testing.T) {
 	}
 }
 
-func TestConfigKeepAliveRoundTripBothDirections(t *testing.T) {
+func TestConfigKeepAliveDecodesInBothDirections(t *testing.T) {
 	original := &v765.ConfigKeepAlive{
 		KeepAliveID: 1234567890,
 	}
@@ -72,7 +72,7 @@ func TestRegistryDataCarriesNBTCodec(t *testing.T) {
 	}
 }
 
-func TestFeatureFlagsRoundTrip(t *testing.T) {
+func TestFeatureFlagsCarriesFeatureList(t *testing.T) {
 	original := &v765.FeatureFlags{
 		Features: gocraft.Slice[gocraft.Identifier]{"minecraft:vanilla", "minecraft:bundle"},
 	}

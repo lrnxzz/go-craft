@@ -29,7 +29,7 @@ func (p *profileEntry) Decode(r *gocraft.Reader) error {
 	return p.ID.Decode(r)
 }
 
-func TestFieldRoundTrip(t *testing.T) {
+func TestFieldTypesSurviveEncoding(t *testing.T) {
 	var id gocraft.UUID
 	for i := range id {
 		id[i] = byte(i)

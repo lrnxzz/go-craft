@@ -59,7 +59,7 @@ func TestBitSetIgnoresNegativeIndex(t *testing.T) {
 	}
 }
 
-func TestBitSetRoundTrip(t *testing.T) {
+func TestBitSetRecoversSetBits(t *testing.T) {
 	var want gocraft.BitSet
 	for _, i := range []int{3, 70, 128, 255} {
 		want.Set(i)
@@ -75,7 +75,7 @@ func TestBitSetRoundTrip(t *testing.T) {
 	}
 }
 
-func TestFixedBitSetRoundTrip(t *testing.T) {
+func TestFixedBitSetRecoversSetBits(t *testing.T) {
 	const bitCount = 26
 
 	want := gocraft.NewFixedBitSet(bitCount)
