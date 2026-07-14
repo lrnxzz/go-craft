@@ -7,4 +7,5 @@ use (
 	./codec/v765
 	./mojang
 	./nbt
+	./viewer
 )

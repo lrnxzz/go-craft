@@ -1,0 +1,70 @@
+package viewer
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+)
+
+type Program struct {
+	id uint32
+}
+
+func NewProgram(vertexSource, fragmentSource string) (*Program, error) {
+	vertex, err := compileShader(vertexSource, gl.VERTEX_SHADER)
+	if err != nil {
+		return nil, err
+	}
+
+	fragment, err := compileShader(fragmentSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return nil, err
+	}
+
+	id := gl.CreateProgram()
+	gl.AttachShader(id, vertex)
+	gl.AttachShader(id, fragment)
+	gl.LinkProgram(id)
+	gl.DeleteShader(vertex)
+	gl.DeleteShader(fragment)
+
+	var status int32
+	gl.GetProgramiv(id, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		return nil, fmt.Errorf("viewer: link program: %s", infoLog(id, gl.GetProgramiv, gl.GetProgramInfoLog))
+	}
+
+	return &Program{id: id}, nil
+}
+
+func (p *Program) Use() {
+	gl.UseProgram(p.id)
+}
+
+func compileShader(source string, kind uint32) (uint32, error) {
+	shader := gl.CreateShader(kind)
+
+	sources, free := gl.Strs(source + "\x00")
+	gl.ShaderSource(shader, 1, sources, nil)
+	free()
+	gl.CompileShader(shader)
+
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		return 0, fmt.Errorf("viewer: compile shader: %s", infoLog(shader, gl.GetShaderiv, gl.GetShaderInfoLog))
+	}
+
+	return shader, nil
+}
+
+func infoLog(object uint32, lengthOf func(uint32, uint32, *int32), read func(uint32, int32, *int32, *uint8)) string {
+	var length int32
+	lengthOf(object, gl.INFO_LOG_LENGTH, &length)
+
+	message := strings.Repeat("\x00", int(length+1))
+	read(object, length, nil, gl.Str(message))
+
+	return strings.TrimRight(message, "\x00")
+}
