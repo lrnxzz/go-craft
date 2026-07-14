@@ -23,9 +23,9 @@ func (p *Position) Decode(r *Reader) error {
 		return err
 	}
 
-	p.X = int32(packed >> 38)
-	p.Y = int32(packed << 52 >> 52)
-	p.Z = int32(packed << 26 >> 38)
+	p.X = int32(packed.Signed(38, 26))
+	p.Y = int32(packed.Signed(0, 12))
+	p.Z = int32(packed.Signed(12, 26))
 
 	return nil
 }
