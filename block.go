@@ -1,17 +1,12 @@
 package gocraft
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
-	"sync"
 )
 
 type BlockState int32
-
-const Air BlockState = 0
 
 type paletteKind struct {
 	entries     int
@@ -93,11 +88,6 @@ func (c *PalettedContainer[T]) Decode(r *Reader) error {
 	return nil
 }
 
-//go:generate go run ./gen blocks
-
-//go:embed blocks.json
-var blocks []byte
-
 type Property struct {
 	Name   string
 	Values []string
@@ -151,43 +141,4 @@ func (b Block) At(state BlockState) map[string]string {
 	}
 
 	return values
-}
-
-var loadBlocks = sync.OnceValue(func() []Block {
-	var catalog []Block
-	if err := json.Unmarshal(blocks, &catalog); err != nil {
-		panic(fmt.Sprintf("gocraft: embedded block data is invalid: %v", err))
-	}
-
-	return catalog
-})
-
-var blocksByName = sync.OnceValue(func() map[Identifier]Block {
-	catalog := loadBlocks()
-
-	byName := make(map[Identifier]Block, len(catalog))
-	for _, block := range catalog {
-		byName[block.Name] = block
-	}
-
-	return byName
-})
-
-func BlockOf(state BlockState) (Block, bool) {
-	catalog := loadBlocks()
-
-	index := sort.Search(len(catalog), func(i int) bool {
-		return catalog[i].MaxState >= state
-	})
-	if index < len(catalog) && catalog[index].MinState <= state {
-		return catalog[index], true
-	}
-
-	return Block{}, false
-}
-
-func BlockNamed(name Identifier) (Block, bool) {
-	block, ok := blocksByName()[name]
-
-	return block, ok
 }

@@ -1,13 +1,13 @@
-package gocraft_test
+package biomes_test
 
 import (
 	"testing"
 
-	gocraft "github.com/lrnxzz/go-craft"
+	"github.com/lrnxzz/go-craft/codec/v765/biomes"
 )
 
-func TestBiomeOfResolvesID(t *testing.T) {
-	info, ok := gocraft.BiomeOf(0)
+func TestOfResolvesID(t *testing.T) {
+	info, ok := biomes.Of(0)
 	if !ok {
 		t.Fatal("no biome for id 0")
 	}
@@ -16,8 +16,8 @@ func TestBiomeOfResolvesID(t *testing.T) {
 	}
 }
 
-func TestBiomeNamedResolves(t *testing.T) {
-	info, ok := gocraft.BiomeNamed("plains")
+func TestNamedResolves(t *testing.T) {
+	info, ok := biomes.Named("plains")
 	if !ok {
 		t.Fatal("plains not found")
 	}
