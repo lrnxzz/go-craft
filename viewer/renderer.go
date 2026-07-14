@@ -14,10 +14,15 @@ var vertexShader string
 //go:embed assets/shaders/world.frag
 var fragmentShader string
 
+type chunkKey struct {
+	x int32
+	z int32
+}
+
 type Renderer struct {
 	program *gpu.Program
 	tileset *Tileset
-	chunks  []*gpu.Mesh
+	chunks  map[chunkKey]*gpu.Mesh
 }
 
 func NewRenderer(tileset *Tileset) (*Renderer, error) {
@@ -26,13 +31,24 @@ func NewRenderer(tileset *Tileset) (*Renderer, error) {
 		return nil, err
 	}
 
-	return &Renderer{program: program, tileset: tileset}, nil
+	return &Renderer{program: program, tileset: tileset, chunks: map[chunkKey]*gpu.Mesh{}}, nil
 }
 
 func (r *Renderer) Build(world *gocraft.World) {
-	r.chunks = r.chunks[:0]
+	loaded := map[chunkKey]bool{}
 	for _, column := range world.Columns() {
-		r.chunks = append(r.chunks, mesh.Chunk(world, column, r.tileset))
+		key := chunkKey{column.X, column.Z}
+		loaded[key] = true
+		if _, meshed := r.chunks[key]; !meshed {
+			r.chunks[key] = mesh.Chunk(world, column, r.tileset)
+		}
+	}
+
+	for key, chunk := range r.chunks {
+		if !loaded[key] {
+			chunk.Delete()
+			delete(r.chunks, key)
+		}
 	}
 }
 

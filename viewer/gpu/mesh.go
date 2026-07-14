@@ -51,6 +51,14 @@ func NewMesh(vertices []float32, indices []uint32, layout ...Attribute) *Mesh {
 	return mesh
 }
 
+func (m *Mesh) Delete() {
+	gl.DeleteVertexArrays(1, &m.vao)
+	gl.DeleteBuffers(1, &m.vbo)
+	if m.indexed {
+		gl.DeleteBuffers(1, &m.ebo)
+	}
+}
+
 func (m *Mesh) Draw() {
 	if m.count == 0 {
 		return

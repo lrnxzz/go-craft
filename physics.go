@@ -81,12 +81,15 @@ func (p *Physics) obstacles(world *World, region AABB) []AABB {
 	for x := lo.X; x <= hi.X; x++ {
 		for y := lo.Y; y <= hi.Y; y++ {
 			for z := lo.Z; z <= hi.Z; z++ {
+				corner := Vec3d{float64(x), float64(y), float64(z)}
+
 				state, ok := world.Block(x, y, z)
 				if !ok {
+					boxes = append(boxes, AABB{Min: corner, Max: corner.Offset(1, 1, 1)})
+
 					continue
 				}
 
-				corner := Vec3d{float64(x), float64(y), float64(z)}
 				for _, shape := range p.collider(state) {
 					boxes = append(boxes, shape.Offset(corner))
 				}

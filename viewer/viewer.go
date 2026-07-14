@@ -9,7 +9,7 @@ import (
 const (
 	defaultWidth  = 1280
 	defaultHeight = 720
-	remeshEvery   = 120
+	remeshEvery   = 15
 )
 
 type Viewer struct {
