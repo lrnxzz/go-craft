@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/agent"
 	"github.com/lrnxzz/go-craft/codec/v765/blocks"
 	"github.com/spf13/cobra"
@@ -15,6 +16,7 @@ func joinCommand() *cobra.Command {
 	var (
 		username string
 		timeout  time.Duration
+		walk     bool
 	)
 
 	command := &cobra.Command{
@@ -32,11 +34,25 @@ func joinCommand() *cobra.Command {
 				return err
 			}
 
+			var start gocraft.Vec3d
+			if walk {
+				bot.OnSpawn(func() {
+					start = bot.Player().Position
+					bot.Look(0, 0)
+					bot.SetControls(gocraft.Controls{Forward: true})
+					slog.Info("walking forward", "from", start)
+				})
+			}
+
 			if err := bot.Run(ctx); err != nil && !errors.Is(err, context.DeadlineExceeded) {
 				return err
 			}
 
 			report(bot)
+			if walk {
+				end := bot.Player().Position
+				slog.Info("walked", "to", end, "distance", end.Distance(start))
+			}
 			slog.Info("disconnected")
 
 			return nil
@@ -45,6 +61,7 @@ func joinCommand() *cobra.Command {
 
 	command.Flags().StringVar(&username, "username", "gocraft_bot", "bot username (offline mode)")
 	command.Flags().DurationVar(&timeout, "timeout", 15*time.Second, "how long to stay connected")
+	command.Flags().BoolVar(&walk, "walk", false, "walk forward after spawning")
 
 	return command
 }
