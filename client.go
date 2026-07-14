@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"sync"
 	"sync/atomic"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type Client struct {
@@ -16,6 +14,7 @@ type Client struct {
 	state     atomic.Uint32
 	listeners listeners
 	sender    *sender
+	tick      ticker
 	done      chan struct{}
 	closeOnce sync.Once
 }
@@ -83,61 +82,6 @@ func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
 	c.listeners.add(key, func(client *Client, packet Packet) error {
 		return handler(client, packet.(P))
 	})
-}
-
-func (c *Client) Run(parent context.Context) error {
-	ctx, cancel := context.WithCancel(parent)
-	defer cancel()
-
-	stop := context.AfterFunc(ctx, func() {
-		c.Close()
-	})
-	defer stop()
-
-	var group errgroup.Group
-
-	group.Go(func() error {
-		defer cancel()
-
-		return c.readLoop(ctx)
-	})
-	group.Go(func() error {
-		defer cancel()
-
-		return c.sender.loop(ctx)
-	})
-
-	return group.Wait()
-}
-
-func (c *Client) readLoop(ctx context.Context) error {
-	for {
-		frame, err := c.conn.ReadFrame()
-		if err != nil {
-			return c.exit(ctx, err)
-		}
-
-		if err := c.receive(frame); err != nil {
-			return err
-		}
-	}
-}
-
-func (c *Client) receive(frame Frame) error {
-	state := c.State()
-
-	packet, known, err := c.protocol.Decode(state, Clientbound, frame)
-	if err != nil {
-		return err
-	}
-	if !known {
-		slog.Debug("skipped unknown packet", "id", frame.ID)
-		return nil
-	}
-
-	slog.Debug("received", "packet", packet.Name())
-
-	return c.listeners.dispatch(c, state, packet)
 }
 
 func (c *Client) exit(ctx context.Context, readErr error) error {
