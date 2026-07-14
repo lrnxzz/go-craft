@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log/slog"
 
 	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/mojang"
@@ -18,24 +17,15 @@ const (
 type JoinHandler func(*gocraft.Client, *JoinGame) error
 
 type Session struct {
-	client *gocraft.Client
-	world  *gocraft.World
-	player *gocraft.Player
-	ready  JoinHandler
-}
-
-func (s *Session) World() *gocraft.World {
-	return s.world
-}
-
-func (s *Session) Player() *gocraft.Player {
-	return s.player
+	client  *gocraft.Client
+	world   *gocraft.World
+	player  *gocraft.Player
+	ready   JoinHandler
+	spawned bool
 }
 
 func Join(client *gocraft.Client, host string, port uint16, username string, onReady JoinHandler) (*Session, error) {
-	offline := mojang.Offline{
-		Username: username,
-	}
+	offline := mojang.Offline{Username: username}
 
 	profile, err := offline.Authenticate(context.Background())
 	if err != nil {
@@ -53,111 +43,98 @@ func Join(client *gocraft.Client, host string, port uint16, username string, onR
 		player: &gocraft.Player{},
 		ready:  onReady,
 	}
-	session.install()
+	session.listen()
 
-	handshake := &Handshake{
+	if err := client.Send(&Handshake{
 		ProtocolVersion: ProtocolVersion,
 		ServerAddress:   gocraft.String(host),
 		ServerPort:      gocraft.UShort(port),
 		NextState:       gocraft.VarInt(gocraft.StateLogin),
-	}
-	if err := client.Send(handshake); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
 	client.SetState(gocraft.StateLogin)
 
-	start := &LoginStart{
+	return session, client.Send(&LoginStart{
 		Username: gocraft.String(username),
 		UUID:     uuid,
-	}
-	if err := client.Send(start); err != nil {
-		return nil, err
-	}
-
-	return session, nil
+	})
 }
 
-func (s *Session) install() {
-	installLogin(s.client)
-	installConfiguration(s.client)
-
-	gocraft.On[*JoinGame](s.client, gocraft.StatePlay, s.onJoinGame)
-	gocraft.On[*PlayKeepAlive](s.client, gocraft.StatePlay, onPlayKeepAlive)
-	gocraft.On[*SyncPlayerPosition](s.client, gocraft.StatePlay, s.onSyncPlayerPosition)
-	gocraft.On[*ChunkData](s.client, gocraft.StatePlay, s.onChunkData)
-	gocraft.On[*UnloadChunk](s.client, gocraft.StatePlay, s.onUnloadChunk)
-	gocraft.On[*BlockUpdate](s.client, gocraft.StatePlay, s.onBlockUpdate)
-	gocraft.On[*SectionBlocksUpdate](s.client, gocraft.StatePlay, s.onSectionBlocksUpdate)
-	gocraft.On[*SetHealth](s.client, gocraft.StatePlay, s.onSetHealth)
-	gocraft.On[*PlayDisconnect](s.client, gocraft.StatePlay, onPlayDisconnect)
+func (s *Session) World() *gocraft.World {
+	return s.world
 }
 
-func installLogin(client *gocraft.Client) {
-	gocraft.On[*SetCompression](client, gocraft.StateLogin, onSetCompression)
-	gocraft.On[*EncryptionBegin](client, gocraft.StateLogin, onEncryptionBegin)
-	gocraft.On[*LoginSuccess](client, gocraft.StateLogin, onLoginSuccess)
-	gocraft.On[*LoginDisconnect](client, gocraft.StateLogin, onLoginDisconnect)
+func (s *Session) Player() *gocraft.Player {
+	return s.player
 }
 
-func installConfiguration(client *gocraft.Client) {
-	gocraft.On[*ConfigKeepAlive](client, gocraft.StateConfiguration, onConfigKeepAlive)
-	gocraft.On[*ConfigPing](client, gocraft.StateConfiguration, onConfigPing)
-	gocraft.On[*FinishConfiguration](client, gocraft.StateConfiguration, onFinishConfiguration)
-	gocraft.On[*ConfigDisconnect](client, gocraft.StateConfiguration, onConfigDisconnect)
+func (s *Session) Spawned() bool {
+	return s.spawned
 }
 
-func onSetCompression(c *gocraft.Client, p *SetCompression) error {
+func (s *Session) listen() {
+	gocraft.On(s.client, gocraft.StateLogin, s.onCompression)
+	gocraft.On(s.client, gocraft.StateLogin, s.onEncryption)
+	gocraft.On(s.client, gocraft.StateLogin, s.onLoginSuccess)
+	gocraft.On(s.client, gocraft.StateLogin, s.onLoginDisconnect)
+
+	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigKeepAlive)
+	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigPing)
+	gocraft.On(s.client, gocraft.StateConfiguration, s.onFinishConfiguration)
+	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigDisconnect)
+
+	gocraft.On(s.client, gocraft.StatePlay, s.onJoinGame)
+	gocraft.On(s.client, gocraft.StatePlay, s.onKeepAlive)
+	gocraft.On(s.client, gocraft.StatePlay, s.onSyncPosition)
+	gocraft.On(s.client, gocraft.StatePlay, s.onChunkData)
+	gocraft.On(s.client, gocraft.StatePlay, s.onUnloadChunk)
+	gocraft.On(s.client, gocraft.StatePlay, s.onBlockUpdate)
+	gocraft.On(s.client, gocraft.StatePlay, s.onSectionBlocks)
+	gocraft.On(s.client, gocraft.StatePlay, s.onHealth)
+	gocraft.On(s.client, gocraft.StatePlay, s.onPlayDisconnect)
+}
+
+func (s *Session) onCompression(c *gocraft.Client, p *SetCompression) error {
 	c.SetCompression(int(p.Threshold))
 
 	return nil
 }
 
-func onEncryptionBegin(c *gocraft.Client, p *EncryptionBegin) error {
-	return fmt.Errorf("v765: server requested encryption (online-mode) — auth and encryption are not implemented yet")
+func (s *Session) onEncryption(c *gocraft.Client, p *EncryptionBegin) error {
+	return fmt.Errorf("v765: server requested encryption (online-mode); auth and encryption are not implemented")
 }
 
-func onLoginSuccess(c *gocraft.Client, p *LoginSuccess) error {
-	ack := &LoginAcknowledged{}
-	if err := c.Send(ack); err != nil {
+func (s *Session) onLoginSuccess(c *gocraft.Client, p *LoginSuccess) error {
+	if err := c.Send(&LoginAcknowledged{}); err != nil {
 		return err
 	}
 
 	c.SetState(gocraft.StateConfiguration)
 
-	info := &ClientInformation{
+	return c.Send(&ClientInformation{
 		Locale:              "en_us",
 		ViewDistance:        8,
 		MainHand:            1,
 		EnableServerListing: true,
-	}
-
-	return c.Send(info)
+	})
 }
 
-func onLoginDisconnect(c *gocraft.Client, p *LoginDisconnect) error {
+func (s *Session) onLoginDisconnect(c *gocraft.Client, p *LoginDisconnect) error {
 	return fmt.Errorf("v765: kicked during login: %s", p.Reason)
 }
 
-func onConfigKeepAlive(c *gocraft.Client, p *ConfigKeepAlive) error {
-	reply := &ConfigKeepAliveResponse{
-		KeepAliveID: p.KeepAliveID,
-	}
-
-	return c.Send(reply)
+func (s *Session) onConfigKeepAlive(c *gocraft.Client, p *ConfigKeepAlive) error {
+	return c.Send(&ConfigKeepAliveResponse{KeepAliveID: p.KeepAliveID})
 }
 
-func onConfigPing(c *gocraft.Client, p *ConfigPing) error {
-	pong := &ConfigPong{
-		PingID: p.PingID,
-	}
-
-	return c.Send(pong)
+func (s *Session) onConfigPing(c *gocraft.Client, p *ConfigPing) error {
+	return c.Send(&ConfigPong{PingID: p.PingID})
 }
 
-func onFinishConfiguration(c *gocraft.Client, p *FinishConfiguration) error {
-	done := &FinishConfiguration{}
-	if err := c.Send(done); err != nil {
+func (s *Session) onFinishConfiguration(c *gocraft.Client, p *FinishConfiguration) error {
+	if err := c.Send(&FinishConfiguration{}); err != nil {
 		return err
 	}
 
@@ -166,20 +143,8 @@ func onFinishConfiguration(c *gocraft.Client, p *FinishConfiguration) error {
 	return nil
 }
 
-func onConfigDisconnect(c *gocraft.Client, p *ConfigDisconnect) error {
+func (s *Session) onConfigDisconnect(c *gocraft.Client, p *ConfigDisconnect) error {
 	return fmt.Errorf("v765: kicked during configuration")
-}
-
-func onPlayKeepAlive(c *gocraft.Client, p *PlayKeepAlive) error {
-	reply := &PlayKeepAliveResponse{
-		KeepAliveID: p.KeepAliveID,
-	}
-
-	return c.Send(reply)
-}
-
-func onPlayDisconnect(c *gocraft.Client, p *PlayDisconnect) error {
-	return fmt.Errorf("v765: kicked during play")
 }
 
 func (s *Session) onJoinGame(c *gocraft.Client, p *JoinGame) error {
@@ -192,28 +157,30 @@ func (s *Session) onJoinGame(c *gocraft.Client, p *JoinGame) error {
 	return nil
 }
 
-func (s *Session) onSyncPlayerPosition(c *gocraft.Client, p *SyncPlayerPosition) error {
+func (s *Session) onKeepAlive(c *gocraft.Client, p *PlayKeepAlive) error {
+	return c.Send(&PlayKeepAliveResponse{KeepAliveID: p.KeepAliveID})
+}
+
+func (s *Session) onSyncPosition(c *gocraft.Client, p *SyncPlayerPosition) error {
 	p.Apply(s.player)
+	s.spawned = true
 
-	slog.Debug("teleported", "position", s.player.Position)
-
-	confirm := &ConfirmTeleport{
-		TeleportID: p.TeleportID,
-	}
-	if err := c.Send(confirm); err != nil {
+	if err := c.Send(&ConfirmTeleport{TeleportID: p.TeleportID}); err != nil {
 		return err
 	}
 
-	reply := &SetPlayerPositionRotation{
+	return s.SendPosition()
+}
+
+func (s *Session) SendPosition() error {
+	return s.client.Send(&SetPlayerPositionRotation{
 		X:        gocraft.Double(s.player.Position.X),
 		Y:        gocraft.Double(s.player.Position.Y),
 		Z:        gocraft.Double(s.player.Position.Z),
 		Yaw:      gocraft.Float(s.player.Yaw),
 		Pitch:    gocraft.Float(s.player.Pitch),
 		OnGround: gocraft.Bool(s.player.OnGround),
-	}
-
-	return c.Send(reply)
+	})
 }
 
 func (s *Session) onChunkData(c *gocraft.Client, p *ChunkData) error {
@@ -240,7 +207,7 @@ func (s *Session) onBlockUpdate(c *gocraft.Client, p *BlockUpdate) error {
 	return nil
 }
 
-func (s *Session) onSectionBlocksUpdate(c *gocraft.Client, p *SectionBlocksUpdate) error {
+func (s *Session) onSectionBlocks(c *gocraft.Client, p *SectionBlocksUpdate) error {
 	for _, b := range p.Changes() {
 		s.world.SetBlock(b.X, b.Y, b.Z, b.State)
 	}
@@ -248,9 +215,13 @@ func (s *Session) onSectionBlocksUpdate(c *gocraft.Client, p *SectionBlocksUpdat
 	return nil
 }
 
-func (s *Session) onSetHealth(c *gocraft.Client, p *SetHealth) error {
+func (s *Session) onHealth(c *gocraft.Client, p *SetHealth) error {
 	s.player.Health = float32(p.Health)
 	s.player.Food = int32(p.Food)
 
 	return nil
+}
+
+func (s *Session) onPlayDisconnect(c *gocraft.Client, p *PlayDisconnect) error {
+	return fmt.Errorf("v765: kicked during play")
 }
