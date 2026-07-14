@@ -216,12 +216,24 @@ type propertyData struct {
 	Values    []string `json:"values"`
 }
 
+type BoundingBox string
+
+const (
+	BoundingBoxEmpty BoundingBox = "empty"
+	BoundingBoxBlock BoundingBox = "block"
+)
+
 type Block struct {
-	Name         Identifier `json:"name"`
-	MinState     BlockState `json:"minStateId"`
-	MaxState     BlockState `json:"maxStateId"`
-	DefaultState BlockState `json:"defaultState"`
-	Properties   []Property `json:"states"`
+	Name         Identifier  `json:"name"`
+	MinState     BlockState  `json:"minStateId"`
+	MaxState     BlockState  `json:"maxStateId"`
+	DefaultState BlockState  `json:"defaultState"`
+	BoundingBox  BoundingBox `json:"boundingBox"`
+	Properties   []Property  `json:"states"`
+}
+
+func (b Block) Solid() bool {
+	return b.BoundingBox == BoundingBoxBlock
 }
 
 func (b Block) At(state BlockState) map[string]string {

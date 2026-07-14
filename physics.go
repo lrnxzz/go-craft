@@ -7,15 +7,22 @@ const (
 	playerHeight = 1.8
 )
 
+type Collider func(BlockState) []AABB
+
 type Physics struct {
 	Velocity Vec3d
+	collider Collider
+}
+
+func NewPhysics(collider Collider) *Physics {
+	return &Physics{collider: collider}
 }
 
 func (p *Physics) Tick(world *World, player *Player) {
 	p.Velocity.Y -= gravity
 
 	box := BoxAround(player.Position, playerWidth, playerHeight)
-	moved := collide(world, box, p.Velocity)
+	moved := p.collide(world, box, p.Velocity)
 
 	player.OnGround = p.Velocity.Y < 0 && moved.Y != p.Velocity.Y
 	player.Position = player.Position.Add(moved)
@@ -33,8 +40,8 @@ func (p *Physics) Tick(world *World, player *Player) {
 	p.Velocity.Y *= verticalDrag
 }
 
-func collide(world *World, box AABB, velocity Vec3d) Vec3d {
-	obstacles := solids(world, box.Stretch(velocity.X, velocity.Y, velocity.Z))
+func (p *Physics) collide(world *World, box AABB, velocity Vec3d) Vec3d {
+	obstacles := p.obstacles(world, box.Stretch(velocity.X, velocity.Y, velocity.Z))
 
 	dy := velocity.Y
 	for _, o := range obstacles {
@@ -56,7 +63,7 @@ func collide(world *World, box AABB, velocity Vec3d) Vec3d {
 	return Vec3d{dx, dy, dz}
 }
 
-func solids(world *World, region AABB) []AABB {
+func (p *Physics) obstacles(world *World, region AABB) []AABB {
 	lo, hi := region.Min.Floor(), region.Max.Floor()
 
 	var boxes []AABB
@@ -64,19 +71,17 @@ func solids(world *World, region AABB) []AABB {
 		for y := lo.Y; y <= hi.Y; y++ {
 			for z := lo.Z; z <= hi.Z; z++ {
 				state, ok := world.Block(x, y, z)
-				if !ok || state == 0 {
+				if !ok {
 					continue
 				}
-				boxes = append(boxes, cube(x, y, z))
+
+				corner := Vec3d{float64(x), float64(y), float64(z)}
+				for _, shape := range p.collider(state) {
+					boxes = append(boxes, shape.Offset(corner))
+				}
 			}
 		}
 	}
 
 	return boxes
-}
-
-func cube(x, y, z int) AABB {
-	corner := Vec3d{float64(x), float64(y), float64(z)}
-
-	return AABB{Min: corner, Max: corner.Offset(1, 1, 1)}
 }

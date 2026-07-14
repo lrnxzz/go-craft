@@ -14,7 +14,13 @@ func TestPhysicsLandsOnGround(t *testing.T) {
 	world.LoadColumn(column)
 
 	player := &gocraft.Player{Position: gocraft.Vec3d{X: 0.5, Y: 5, Z: 0.5}}
-	physics := &gocraft.Physics{}
+	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
+		if state == 0 {
+			return nil
+		}
+
+		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+	})
 
 	for range 200 {
 		physics.Tick(world, player)
@@ -33,7 +39,13 @@ func TestPhysicsFallsThroughAir(t *testing.T) {
 	world.LoadColumn(gocraft.NewChunkColumn(0, 0, -64, 384))
 
 	player := &gocraft.Player{Position: gocraft.Vec3d{X: 0.5, Y: 100, Z: 0.5}}
-	physics := &gocraft.Physics{}
+	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
+		if state == 0 {
+			return nil
+		}
+
+		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+	})
 
 	physics.Tick(world, player)
 

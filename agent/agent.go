@@ -9,6 +9,7 @@ import (
 
 	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/codec/v765"
+	"github.com/lrnxzz/go-craft/codec/v765/blocks"
 )
 
 const tickRate = 50 * time.Millisecond
@@ -16,7 +17,7 @@ const tickRate = 50 * time.Millisecond
 type Agent struct {
 	client  *gocraft.Client
 	session *v765.Session
-	physics gocraft.Physics
+	physics *gocraft.Physics
 }
 
 func Join(ctx context.Context, address, username string) (*Agent, error) {
@@ -31,7 +32,7 @@ func Join(ctx context.Context, address, username string) (*Agent, error) {
 	}
 
 	client := gocraft.NewClient(conn, v765.Protocol())
-	a := &Agent{client: client}
+	a := &Agent{client: client, physics: gocraft.NewPhysics(blocks.Collision)}
 
 	session, err := v765.Join(client, host, port, username, nil)
 	if err != nil {
