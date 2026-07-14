@@ -19,3 +19,7 @@ func (c Camera) View() mgl32.Mat4 {
 func (c Camera) Projection() mgl32.Mat4 {
 	return mgl32.Perspective(mgl32.DegToRad(c.FOV), c.Aspect, c.Near, c.Far)
 }
+
+func (c Camera) ViewProjection() mgl32.Mat4 {
+	return c.Projection().Mul4(c.View())
+}

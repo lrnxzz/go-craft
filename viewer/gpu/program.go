@@ -1,4 +1,4 @@
-package viewer
+package gpu
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ func NewProgram(vertexSource, fragmentSource string) (*Program, error) {
 	var status int32
 	gl.GetProgramiv(id, gl.LINK_STATUS, &status)
 	if status == gl.FALSE {
-		return nil, fmt.Errorf("viewer: link program: %s", infoLog(id, gl.GetProgramiv, gl.GetProgramInfoLog))
+		return nil, fmt.Errorf("gpu: link program: %s", infoLog(id, gl.GetProgramiv, gl.GetProgramInfoLog))
 	}
 
 	return &Program{id: id}, nil
@@ -66,7 +66,7 @@ func compileShader(source string, kind uint32) (uint32, error) {
 	var status int32
 	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
 	if status == gl.FALSE {
-		return 0, fmt.Errorf("viewer: compile shader: %s", infoLog(shader, gl.GetShaderiv, gl.GetShaderInfoLog))
+		return 0, fmt.Errorf("gpu: compile shader: %s", infoLog(shader, gl.GetShaderiv, gl.GetShaderInfoLog))
 	}
 
 	return shader, nil

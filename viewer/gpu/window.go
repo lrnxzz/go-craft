@@ -1,4 +1,4 @@
-package viewer
+package gpu
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ type Window struct {
 
 func OpenWindow(title string, width, height int, visible bool) (*Window, error) {
 	if err := glfw.Init(); err != nil {
-		return nil, fmt.Errorf("viewer: glfw init: %w", err)
+		return nil, fmt.Errorf("gpu: glfw init: %w", err)
 	}
 
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
@@ -33,21 +33,27 @@ func OpenWindow(title string, width, height int, visible bool) (*Window, error) 
 	if err != nil {
 		glfw.Terminate()
 
-		return nil, fmt.Errorf("viewer: create window: %w", err)
+		return nil, fmt.Errorf("gpu: create window: %w", err)
 	}
 	handle.MakeContextCurrent()
 
 	if err := gl.Init(); err != nil {
 		glfw.Terminate()
 
-		return nil, fmt.Errorf("viewer: gl init: %w", err)
+		return nil, fmt.Errorf("gpu: gl init: %w", err)
 	}
+	gl.Enable(gl.DEPTH_TEST)
 
 	return &Window{handle: handle, width: width, height: height}, nil
 }
 
 func (w *Window) ShouldClose() bool {
 	return w.handle.ShouldClose()
+}
+
+func (w *Window) Clear(r, g, b float32) {
+	gl.ClearColor(r, g, b, 1)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
 func (w *Window) Present() {
@@ -64,6 +70,8 @@ func (w *Window) Close() {
 }
 
 func (w *Window) Capture(path string) error {
+	gl.Finish()
+
 	pixels := make([]byte, w.width*w.height*4)
 	gl.ReadPixels(0, 0, int32(w.width), int32(w.height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(pixels))
 

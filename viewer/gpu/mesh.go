@@ -1,4 +1,4 @@
-package viewer
+package gpu
 
 import "github.com/go-gl/gl/v3.3-core/gl"
 
@@ -16,6 +16,10 @@ type Mesh struct {
 }
 
 func NewMesh(vertices []float32, indices []uint32, layout ...Attribute) *Mesh {
+	if len(vertices) == 0 {
+		return &Mesh{}
+	}
+
 	var stride int32
 	for _, attr := range layout {
 		stride += attr.Size
@@ -48,6 +52,10 @@ func NewMesh(vertices []float32, indices []uint32, layout ...Attribute) *Mesh {
 }
 
 func (m *Mesh) Draw() {
+	if m.count == 0 {
+		return
+	}
+
 	gl.BindVertexArray(m.vao)
 	if m.indexed {
 		gl.DrawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_INT, nil)
@@ -56,4 +64,14 @@ func (m *Mesh) Draw() {
 	}
 
 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
+}
+
+func QuadIndices(quads int) []uint32 {
+	indices := make([]uint32, 0, quads*6)
+	for quad := range uint32(quads) {
+		base := quad * 4
+		indices = append(indices, base, base+1, base+2, base, base+2, base+3)
+	}
+
+	return indices
 }

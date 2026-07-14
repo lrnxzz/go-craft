@@ -43,12 +43,27 @@ func (w *World) Loaded() int {
 	return len(w.columns)
 }
 
+func (w *World) Columns() []*ChunkColumn {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	columns := make([]*ChunkColumn, 0, len(w.columns))
+	for _, column := range w.columns {
+		columns = append(columns, column)
+	}
+
+	return columns
+}
+
 func (w *World) Block(x, y, z int) (BlockState, bool) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 
 	c, ok := w.columns[chunkPos{int32(x >> 4), int32(z >> 4)}]
 	if !ok {
+		return 0, false
+	}
+	if y < c.minY || y >= c.minY+len(c.sections)*16 {
 		return 0, false
 	}
 
