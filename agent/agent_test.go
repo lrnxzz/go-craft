@@ -3,6 +3,7 @@ package agent_test
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"testing"
 	"time"
@@ -58,5 +59,47 @@ func TestAgentWalksOnServer(t *testing.T) {
 	}
 	if !bot.Player().OnGround {
 		t.Error("bot should stay on the ground while walking on flat terrain")
+	}
+}
+
+func TestAgentMovesToTarget(t *testing.T) {
+	addr := os.Getenv("GOCRAFT_IT_ADDR")
+	if addr == "" {
+		t.Skip("set GOCRAFT_IT_ADDR to a running 1.20.4 server to run this integration test")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	bot, err := agent.Join(ctx, addr, "gocraft_goto")
+	if err != nil {
+		t.Fatalf("join: %v", err)
+	}
+
+	var (
+		target  gocraft.Vec3d
+		spawned bool
+	)
+	bot.OnSpawn(func() {
+		spawned = true
+		target = bot.Player().Position.Offset(6, 0, 10)
+		bot.MoveTo(target)
+	})
+
+	if err := bot.Run(ctx); err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("run: %v", err)
+	}
+
+	if !spawned {
+		t.Fatal("bot never reached play / received its spawn position")
+	}
+
+	end := bot.Player().Position
+	gap := math.Hypot(end.X-target.X, end.Z-target.Z)
+
+	t.Logf("target %v, arrived at %v (gap %.2f blocks)", target, end, gap)
+
+	if gap > 1.5 {
+		t.Errorf("bot did not reach the target: gap %.2f blocks", gap)
 	}
 }

@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"strconv"
 	"sync"
@@ -13,7 +14,10 @@ import (
 	"github.com/lrnxzz/go-craft/codec/v765/blocks"
 )
 
-const tickRate = 50 * time.Millisecond
+const (
+	tickRate     = 50 * time.Millisecond
+	arriveRadius = 0.6
+)
 
 type Agent struct {
 	client  *gocraft.Client
@@ -25,6 +29,7 @@ type Agent struct {
 	yaw      float32
 	pitch    float32
 	look     bool
+	goal     *gocraft.Vec3d
 
 	onSpawn      func()
 	spawnedFired bool
@@ -85,6 +90,19 @@ func (a *Agent) OnSpawn(fn func()) {
 	a.onSpawn = fn
 }
 
+func (a *Agent) MoveTo(target gocraft.Vec3d) {
+	a.mu.Lock()
+	a.goal = &target
+	a.mu.Unlock()
+}
+
+func (a *Agent) Stop() {
+	a.mu.Lock()
+	a.goal = nil
+	a.controls = gocraft.Controls{}
+	a.mu.Unlock()
+}
+
 func (a *Agent) tick() {
 	if !a.session.Spawned() {
 		return
@@ -94,12 +112,14 @@ func (a *Agent) tick() {
 		a.onSpawn()
 	}
 
+	player := a.session.Player()
+	a.pursue(player)
+
 	a.mu.Lock()
 	controls := a.controls
 	yaw, pitch, look := a.yaw, a.pitch, a.look
 	a.mu.Unlock()
 
-	player := a.session.Player()
 	if look {
 		player.Yaw = yaw
 		player.Pitch = pitch
@@ -107,6 +127,29 @@ func (a *Agent) tick() {
 
 	a.physics.Tick(a.session.World(), player, controls)
 	_ = a.session.SendPosition()
+}
+
+func (a *Agent) pursue(player *gocraft.Player) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.goal == nil {
+		return
+	}
+
+	dx := a.goal.X - player.Position.X
+	dz := a.goal.Z - player.Position.Z
+	if dx*dx+dz*dz < arriveRadius*arriveRadius {
+		a.goal = nil
+		a.controls.Forward = false
+
+		return
+	}
+
+	a.yaw = float32(math.Atan2(-dx, dz) * 180 / math.Pi)
+	a.pitch = 0
+	a.look = true
+	a.controls.Forward = true
 }
 
 func splitAddress(address string) (string, uint16, error) {
