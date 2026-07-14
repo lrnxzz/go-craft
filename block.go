@@ -93,7 +93,7 @@ func (c *PalettedContainer[T]) Decode(r *Reader) error {
 	return nil
 }
 
-//go:generate go run ./gen
+//go:generate go run ./gen blocks
 
 //go:embed blocks.json
 var blocks []byte
