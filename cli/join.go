@@ -82,7 +82,7 @@ func perceived(session *v765.Session) {
 	player := session.Player()
 	feet := player.Position.Floor().Add(0, -1, 0)
 
-	state, _ := session.World().Block(int(feet.X), int(feet.Y), int(feet.Z))
+	state, _ := session.World().Block(feet.X, feet.Y, feet.Z)
 
 	name := "air"
 	if block, ok := blocks.Of(state); ok {

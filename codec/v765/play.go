@@ -273,9 +273,9 @@ type BlockChange struct {
 
 func (p *BlockUpdate) Change() BlockChange {
 	return BlockChange{
-		X:     int(p.Location.X),
-		Y:     int(p.Location.Y),
-		Z:     int(p.Location.Z),
+		X:     p.Location.X,
+		Y:     p.Location.Y,
+		Z:     p.Location.Z,
 		State: gocraft.BlockState(p.State),
 	}
 }

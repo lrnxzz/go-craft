@@ -6,9 +6,9 @@ import (
 )
 
 type Position struct {
-	X int32
-	Y int32
-	Z int32
+	X int
+	Y int
+	Z int
 }
 
 func (p Position) Append(dst []byte) []byte {
@@ -23,14 +23,14 @@ func (p *Position) Decode(r *Reader) error {
 		return err
 	}
 
-	p.X = int32(packed.Signed(38, 26))
-	p.Y = int32(packed.Signed(0, 12))
-	p.Z = int32(packed.Signed(12, 26))
+	p.X = int(packed.Signed(38, 26))
+	p.Y = int(packed.Signed(0, 12))
+	p.Z = int(packed.Signed(12, 26))
 
 	return nil
 }
 
-func (p Position) Add(dx, dy, dz int32) Position {
+func (p Position) Add(dx, dy, dz int) Position {
 	return Position{
 		X: p.X + dx,
 		Y: p.Y + dy,

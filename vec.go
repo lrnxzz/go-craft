@@ -86,9 +86,9 @@ func (v Vec3d) Lerp(o Vec3d, t float64) Vec3d {
 
 func (v Vec3d) Floor() Position {
 	return Position{
-		X: int32(math.Floor(v.X)),
-		Y: int32(math.Floor(v.Y)),
-		Z: int32(math.Floor(v.Z)),
+		X: int(math.Floor(v.X)),
+		Y: int(math.Floor(v.Y)),
+		Z: int(math.Floor(v.Z)),
 	}
 }
 
