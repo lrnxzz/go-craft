@@ -4,3 +4,7 @@
 # test and coverage artifacts
 *.test
 *.out
+
+# atlas generator inputs (large, fetched on demand by: go run ./gen atlas <version>)
+codec/*/assets/client.jar
+codec/*/assets/blocks_models.json

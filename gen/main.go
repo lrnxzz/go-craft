@@ -17,6 +17,7 @@ func main() {
 
 	root.AddCommand(blocksCommand())
 	root.AddCommand(biomesCommand())
+	root.AddCommand(atlasCommand())
 
 	if err := root.Execute(); err != nil {
 		log.Fatal(err)
