@@ -298,6 +298,26 @@ func (s *Slice[T]) Decode(r *Reader) error {
 	return nil
 }
 
+type Bytes []byte
+
+func (b Bytes) Append(dst []byte) []byte {
+	dst = AppendVar(dst, VarInt(len(b)))
+	return append(dst, b...)
+}
+
+func (b *Bytes) Decode(r *Reader) error {
+	var n VarInt
+	if err := n.Decode(r); err != nil {
+		return err
+	}
+	raw := r.take(int(n))
+	if raw == nil {
+		return r.err
+	}
+	*b = append(Bytes(nil), raw...)
+	return nil
+}
+
 type Option[T Field] struct {
 	value   T
 	present bool

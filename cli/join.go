@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/codec/v765"
+	"github.com/lrnxzz/go-craft/codec/v765/blocks"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +18,7 @@ func joinCommand() *cobra.Command {
 	var (
 		username string
 		timeout  time.Duration
+		observe  bool
 	)
 
 	command := &cobra.Command{
@@ -40,16 +43,26 @@ func joinCommand() *cobra.Command {
 
 			ready := func(c *gocraft.Client, join *v765.JoinGame) error {
 				slog.Info("joined", "entity", join.EntityID, "dimension", join.DimensionName)
+				if !observe {
+					return c.Close()
+				}
 
-				return c.Close()
+				slog.Info("observing", "for", timeout)
+
+				return nil
 			}
 
-			if err := v765.Join(client, host, port, username, ready); err != nil {
+			session, err := v765.Join(client, host, port, username, ready)
+			if err != nil {
 				return err
 			}
 
-			if err := client.Run(ctx); err != nil {
+			if err := client.Run(ctx); err != nil && !errors.Is(err, context.DeadlineExceeded) {
 				return err
+			}
+
+			if observe {
+				perceived(session)
 			}
 
 			slog.Info("disconnected")
@@ -60,8 +73,27 @@ func joinCommand() *cobra.Command {
 
 	command.Flags().StringVar(&username, "username", "gocraft_bot", "bot username (offline mode)")
 	command.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "connection timeout")
+	command.Flags().BoolVar(&observe, "observe", false, "stay connected until timeout and report the perceived world")
 
 	return command
+}
+
+func perceived(session *v765.Session) {
+	player := session.Player()
+	feet := player.Position.Floor().Add(0, -1, 0)
+
+	state, _ := session.World().Block(int(feet.X), int(feet.Y), int(feet.Z))
+
+	name := "air"
+	if block, ok := blocks.Of(state); ok {
+		name = string(block.Name)
+	}
+
+	slog.Info("perceived",
+		"position", player.Position,
+		"health", player.Health,
+		"loaded_chunks", session.World().Loaded(),
+		"standing_on", name)
 }
 
 func resolveAddress(arg string) (string, uint16) {

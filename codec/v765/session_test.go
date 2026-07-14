@@ -53,7 +53,7 @@ func TestJoinReachesPlay(t *testing.T) {
 		return c.Close()
 	}
 
-	if err := v765.Join(client, host, port, "gocraft_it", ready); err != nil {
+	if _, err := v765.Join(client, host, port, "gocraft_it", ready); err != nil {
 		t.Fatalf("join: %v", err)
 	}
 

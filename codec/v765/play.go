@@ -163,3 +163,159 @@ func (p PlayDisconnect) Append(dst []byte) []byte {
 func (p *PlayDisconnect) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.Reason)
 }
+
+type ChunkData struct {
+	X          gocraft.Int
+	Z          gocraft.Int
+	Heightmaps gocraft.NBT
+	Sections   gocraft.Bytes
+}
+
+func (*ChunkData) ID() int32 {
+	return 0x25
+}
+
+func (*ChunkData) Name() string {
+	return "ChunkData"
+}
+
+func (p ChunkData) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.X, p.Z, p.Heightmaps, p.Sections)
+}
+
+func (p *ChunkData) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.X, &p.Z, &p.Heightmaps, &p.Sections)
+}
+
+type UnloadChunk struct {
+	Z gocraft.Int
+	X gocraft.Int
+}
+
+func (*UnloadChunk) ID() int32 {
+	return 0x1F
+}
+
+func (*UnloadChunk) Name() string {
+	return "UnloadChunk"
+}
+
+func (p UnloadChunk) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Z, p.X)
+}
+
+func (p *UnloadChunk) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Z, &p.X)
+}
+
+type BlockUpdate struct {
+	Location gocraft.Position
+	State    gocraft.VarInt
+}
+
+func (*BlockUpdate) ID() int32 {
+	return 0x09
+}
+
+func (*BlockUpdate) Name() string {
+	return "BlockUpdate"
+}
+
+func (p BlockUpdate) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Location, p.State)
+}
+
+func (p *BlockUpdate) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Location, &p.State)
+}
+
+type SectionBlocksUpdate struct {
+	Section gocraft.Long
+	Records gocraft.Slice[gocraft.VarLong]
+}
+
+func (*SectionBlocksUpdate) ID() int32 {
+	return 0x47
+}
+
+func (*SectionBlocksUpdate) Name() string {
+	return "SectionBlocksUpdate"
+}
+
+func (p SectionBlocksUpdate) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Section, p.Records)
+}
+
+func (p *SectionBlocksUpdate) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Section, &p.Records)
+}
+
+type SetHealth struct {
+	Health     gocraft.Float
+	Food       gocraft.VarInt
+	Saturation gocraft.Float
+}
+
+func (*SetHealth) ID() int32 {
+	return 0x5B
+}
+
+func (*SetHealth) Name() string {
+	return "SetHealth"
+}
+
+func (p SetHealth) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Health, p.Food, p.Saturation)
+}
+
+func (p *SetHealth) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Health, &p.Food, &p.Saturation)
+}
+
+type SetPlayerPosition struct {
+	X        gocraft.Double
+	Y        gocraft.Double
+	Z        gocraft.Double
+	OnGround gocraft.Bool
+}
+
+func (*SetPlayerPosition) ID() int32 {
+	return 0x17
+}
+
+func (*SetPlayerPosition) Name() string {
+	return "SetPlayerPosition"
+}
+
+func (p SetPlayerPosition) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.X, p.Y, p.Z, p.OnGround)
+}
+
+func (p *SetPlayerPosition) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.X, &p.Y, &p.Z, &p.OnGround)
+}
+
+type SetPlayerPositionRotation struct {
+	X        gocraft.Double
+	Y        gocraft.Double
+	Z        gocraft.Double
+	Yaw      gocraft.Float
+	Pitch    gocraft.Float
+	OnGround gocraft.Bool
+}
+
+func (*SetPlayerPositionRotation) ID() int32 {
+	return 0x18
+}
+
+func (*SetPlayerPositionRotation) Name() string {
+	return "SetPlayerPositionRotation"
+}
+
+func (p SetPlayerPositionRotation) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.X, p.Y, p.Z, p.Yaw, p.Pitch, p.OnGround)
+}
+
+func (p *SetPlayerPositionRotation) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.X, &p.Y, &p.Z, &p.Yaw, &p.Pitch, &p.OnGround)
+}
