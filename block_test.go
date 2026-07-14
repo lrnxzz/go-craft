@@ -51,3 +51,32 @@ func TestPalettedContainerDecodesIndirect(t *testing.T) {
 		}
 	}
 }
+
+func TestPalettedContainerSetUpgradesFromSingle(t *testing.T) {
+	container := gocraft.NewBlockStates()
+
+	container.Set(0, 5)
+	container.Set(1, 5)
+	container.Set(2, 9)
+
+	want := map[int]gocraft.BlockState{0: 5, 1: 5, 2: 9, 3: 0, 4095: 0}
+	for index, state := range want {
+		if got := container.Get(index); got != state {
+			t.Errorf("Get(%d) = %d, want %d", index, got, state)
+		}
+	}
+}
+
+func TestPalettedContainerSetOverflowsToDirect(t *testing.T) {
+	container := gocraft.NewBiomes()
+
+	for i := 0; i < 20; i++ {
+		container.Set(i, gocraft.Biome(i))
+	}
+
+	for i := 0; i < 20; i++ {
+		if got := container.Get(i); got != gocraft.Biome(i) {
+			t.Errorf("Get(%d) = %d, want %d", i, got, i)
+		}
+	}
+}

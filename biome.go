@@ -2,7 +2,7 @@ package gocraft
 
 type Biome int32
 
-var biomePalette = paletteKind{entries: 64, indirectMax: 3}
+var biomePalette = paletteKind{entries: 64, indirectMax: 3, directBits: 6}
 
 func NewBiomes() PalettedContainer[Biome] {
 	return PalettedContainer[Biome]{kind: biomePalette}

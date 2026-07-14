@@ -1,0 +1,40 @@
+package gocraft_test
+
+import (
+	"testing"
+
+	gocraft "github.com/lrnxzz/go-craft"
+)
+
+func TestWorldTracksLoadedColumns(t *testing.T) {
+	world := gocraft.NewWorld()
+	world.LoadColumn(gocraft.NewChunkColumn(1, -1, -64, 384))
+
+	if _, ok := world.Column(1, -1); !ok {
+		t.Fatal("column (1, -1) not loaded")
+	}
+	if world.Loaded() != 1 {
+		t.Errorf("Loaded() = %d, want 1", world.Loaded())
+	}
+
+	world.UnloadColumn(1, -1)
+	if _, ok := world.Column(1, -1); ok {
+		t.Fatal("column still present after unload")
+	}
+}
+
+func TestWorldResolvesBlocksAcrossChunkBounds(t *testing.T) {
+	world := gocraft.NewWorld()
+	world.LoadColumn(gocraft.NewChunkColumn(1, -1, -64, 384))
+
+	world.SetBlock(20, 70, -5, 42)
+
+	got, ok := world.Block(20, 70, -5)
+	if !ok || got != 42 {
+		t.Errorf("Block(20, 70, -5) = %d, %v, want 42, true", got, ok)
+	}
+
+	if _, ok := world.Block(0, 70, 0); ok {
+		t.Error("Block in unloaded column returned ok")
+	}
+}
