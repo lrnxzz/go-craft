@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Program struct {
@@ -40,6 +41,18 @@ func NewProgram(vertexSource, fragmentSource string) (*Program, error) {
 
 func (p *Program) Use() {
 	gl.UseProgram(p.id)
+}
+
+func (p *Program) Mat4(name string, value mgl32.Mat4) {
+	gl.UniformMatrix4fv(p.uniform(name), 1, false, &value[0])
+}
+
+func (p *Program) Int(name string, value int32) {
+	gl.Uniform1i(p.uniform(name), value)
+}
+
+func (p *Program) uniform(name string) int32 {
+	return gl.GetUniformLocation(p.id, gl.Str(name+"\x00"))
 }
 
 func compileShader(source string, kind uint32) (uint32, error) {

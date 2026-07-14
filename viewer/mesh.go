@@ -8,12 +8,14 @@ type Attribute struct {
 }
 
 type Mesh struct {
-	vao      uint32
-	vbo      uint32
-	vertices int32
+	vao     uint32
+	vbo     uint32
+	ebo     uint32
+	count   int32
+	indexed bool
 }
 
-func NewMesh(vertices []float32, layout ...Attribute) *Mesh {
+func NewMesh(vertices []float32, indices []uint32, layout ...Attribute) *Mesh {
 	var stride int32
 	for _, attr := range layout {
 		stride += attr.Size
@@ -33,10 +35,25 @@ func NewMesh(vertices []float32, layout ...Attribute) *Mesh {
 		offset += attr.Size
 	}
 
-	return &Mesh{vao: vao, vbo: vbo, vertices: int32(len(vertices)) / stride}
+	mesh := &Mesh{vao: vao, vbo: vbo, count: int32(len(vertices)) / stride}
+	if len(indices) > 0 {
+		gl.GenBuffers(1, &mesh.ebo)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.ebo)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+		mesh.count = int32(len(indices))
+		mesh.indexed = true
+	}
+
+	return mesh
 }
 
 func (m *Mesh) Draw() {
 	gl.BindVertexArray(m.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, m.vertices)
+	if m.indexed {
+		gl.DrawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_INT, nil)
+
+		return
+	}
+
+	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
 }
