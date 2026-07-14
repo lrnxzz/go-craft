@@ -193,12 +193,7 @@ func (s *Session) onJoinGame(c *gocraft.Client, p *JoinGame) error {
 }
 
 func (s *Session) onSyncPlayerPosition(c *gocraft.Client, p *SyncPlayerPosition) error {
-	flags := byte(p.Flags)
-	s.player.Position.X = resolve(s.player.Position.X, float64(p.X), flags&0x01)
-	s.player.Position.Y = resolve(s.player.Position.Y, float64(p.Y), flags&0x02)
-	s.player.Position.Z = resolve(s.player.Position.Z, float64(p.Z), flags&0x04)
-	s.player.Yaw = resolve(s.player.Yaw, float32(p.Yaw), flags&0x08)
-	s.player.Pitch = resolve(s.player.Pitch, float32(p.Pitch), flags&0x10)
+	p.Apply(s.player)
 
 	slog.Debug("teleported", "position", s.player.Position)
 
@@ -221,14 +216,6 @@ func (s *Session) onSyncPlayerPosition(c *gocraft.Client, p *SyncPlayerPosition)
 	return c.Send(reply)
 }
 
-func resolve[T ~float32 | ~float64](current, value T, relative byte) T {
-	if relative != 0 {
-		return current + value
-	}
-
-	return value
-}
-
 func (s *Session) onChunkData(c *gocraft.Client, p *ChunkData) error {
 	column := gocraft.NewChunkColumn(int32(p.X), int32(p.Z), overworldMinY, overworldHeight)
 	if err := column.Decode(gocraft.NewReader(p.Sections)); err != nil {
@@ -247,20 +234,15 @@ func (s *Session) onUnloadChunk(c *gocraft.Client, p *UnloadChunk) error {
 }
 
 func (s *Session) onBlockUpdate(c *gocraft.Client, p *BlockUpdate) error {
-	s.world.SetBlock(int(p.Location.X), int(p.Location.Y), int(p.Location.Z), gocraft.BlockState(p.State))
+	b := p.Change()
+	s.world.SetBlock(b.X, b.Y, b.Z, b.State)
 
 	return nil
 }
 
 func (s *Session) onSectionBlocksUpdate(c *gocraft.Client, p *SectionBlocksUpdate) error {
-	baseX := int(p.Section>>42) * 16
-	baseZ := int(p.Section<<22>>42) * 16
-	baseY := int(p.Section<<44>>44) * 16
-
-	for _, record := range p.Records {
-		value := int64(record)
-		state := gocraft.BlockState(value >> 12)
-		s.world.SetBlock(baseX+int(value>>8&0xf), baseY+int(value&0xf), baseZ+int(value>>4&0xf), state)
+	for _, b := range p.Changes() {
+		s.world.SetBlock(b.X, b.Y, b.Z, b.State)
 	}
 
 	return nil

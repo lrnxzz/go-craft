@@ -178,6 +178,14 @@ func (v *Long) Decode(r *Reader) error {
 	return nil
 }
 
+func (v Long) Signed(offset, size int) int64 {
+	return int64(v) << (64 - offset - size) >> (64 - size)
+}
+
+func (v Long) Unsigned(offset, size int) int64 {
+	return int64(v) >> offset & (int64(1)<<size - 1)
+}
+
 func (v Float) Append(dst []byte) []byte {
 	return appendBE(dst, math.Float32bits(float32(v)))
 }

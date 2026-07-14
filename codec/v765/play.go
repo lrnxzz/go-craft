@@ -124,6 +124,41 @@ func (p *SyncPlayerPosition) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.X, &p.Y, &p.Z, &p.Yaw, &p.Pitch, &p.Flags, &p.TeleportID)
 }
 
+const (
+	relativeX byte = 1 << iota
+	relativeY
+	relativeZ
+	relativeYaw
+	relativePitch
+)
+
+func (p *SyncPlayerPosition) Apply(player *gocraft.Player) {
+	flags := byte(p.Flags)
+
+	target := gocraft.Vec3d{X: float64(p.X), Y: float64(p.Y), Z: float64(p.Z)}
+	if flags&relativeX != 0 {
+		target.X += player.Position.X
+	}
+	if flags&relativeY != 0 {
+		target.Y += player.Position.Y
+	}
+	if flags&relativeZ != 0 {
+		target.Z += player.Position.Z
+	}
+
+	yaw, pitch := float32(p.Yaw), float32(p.Pitch)
+	if flags&relativeYaw != 0 {
+		yaw += player.Yaw
+	}
+	if flags&relativePitch != 0 {
+		pitch += player.Pitch
+	}
+
+	player.Position = target
+	player.Yaw = yaw
+	player.Pitch = pitch
+}
+
 type ConfirmTeleport struct {
 	TeleportID gocraft.VarInt
 }
@@ -229,9 +264,25 @@ func (p *BlockUpdate) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.Location, &p.State)
 }
 
+type BlockChange struct {
+	X     int
+	Y     int
+	Z     int
+	State gocraft.BlockState
+}
+
+func (p *BlockUpdate) Change() BlockChange {
+	return BlockChange{
+		X:     int(p.Location.X),
+		Y:     int(p.Location.Y),
+		Z:     int(p.Location.Z),
+		State: gocraft.BlockState(p.State),
+	}
+}
+
 type SectionBlocksUpdate struct {
 	Section gocraft.Long
-	Records gocraft.Slice[gocraft.VarLong]
+	Packed  gocraft.Slice[gocraft.VarLong]
 }
 
 func (*SectionBlocksUpdate) ID() int32 {
@@ -243,11 +294,30 @@ func (*SectionBlocksUpdate) Name() string {
 }
 
 func (p SectionBlocksUpdate) Append(dst []byte) []byte {
-	return gocraft.AppendAll(dst, p.Section, p.Records)
+	return gocraft.AppendAll(dst, p.Section, p.Packed)
 }
 
 func (p *SectionBlocksUpdate) Decode(r *gocraft.Reader) error {
-	return gocraft.DecodeAll(r, &p.Section, &p.Records)
+	return gocraft.DecodeAll(r, &p.Section, &p.Packed)
+}
+
+func (p *SectionBlocksUpdate) Changes() []BlockChange {
+	baseX := int(p.Section.Signed(42, 22)) * 16
+	baseZ := int(p.Section.Signed(20, 22)) * 16
+	baseY := int(p.Section.Signed(0, 20)) * 16
+
+	changes := make([]BlockChange, len(p.Packed))
+	for i, packed := range p.Packed {
+		block := gocraft.Long(packed)
+		changes[i] = BlockChange{
+			X:     baseX + int(block.Unsigned(8, 4)),
+			Y:     baseY + int(block.Unsigned(0, 4)),
+			Z:     baseZ + int(block.Unsigned(4, 4)),
+			State: gocraft.BlockState(block.Unsigned(12, 52)),
+		}
+	}
+
+	return changes
 }
 
 type SetHealth struct {
