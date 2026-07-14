@@ -18,7 +18,18 @@ func NewPhysics(collider Collider) *Physics {
 	return &Physics{collider: collider}
 }
 
-func (p *Physics) Tick(world *World, player *Player) {
+func (p *Physics) Tick(world *World, player *Player, controls Controls) {
+	heading := controls.heading(player.Yaw)
+	speed := walkSpeed
+	if controls.Sprint {
+		speed = sprintSpeed
+	}
+	p.Velocity.X = heading.X * speed
+	p.Velocity.Z = heading.Z * speed
+
+	if controls.Jump && player.OnGround {
+		p.Velocity.Y = jumpVelocity
+	}
 	p.Velocity.Y -= gravity
 
 	box := BoxAround(player.Position, playerWidth, playerHeight)

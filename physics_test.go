@@ -23,7 +23,7 @@ func TestPhysicsLandsOnGround(t *testing.T) {
 	})
 
 	for range 200 {
-		physics.Tick(world, player)
+		physics.Tick(world, player, gocraft.Controls{})
 	}
 
 	if !player.OnGround {
@@ -47,12 +47,44 @@ func TestPhysicsFallsThroughAir(t *testing.T) {
 		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
 	})
 
-	physics.Tick(world, player)
+	physics.Tick(world, player, gocraft.Controls{})
 
 	if player.OnGround {
 		t.Error("player over empty space should not be on the ground")
 	}
 	if player.Position.Y >= 100 {
 		t.Errorf("player should have fallen, Y = %v", player.Position.Y)
+	}
+}
+
+func TestPhysicsWalksForward(t *testing.T) {
+	column := gocraft.NewChunkColumn(0, 0, -64, 384)
+	for x := range 16 {
+		for z := range 16 {
+			column.SetBlock(x, 0, z, 1)
+		}
+	}
+
+	world := gocraft.NewWorld()
+	world.LoadColumn(column)
+
+	player := &gocraft.Player{Position: gocraft.Vec3d{X: 8, Y: 1, Z: 8}, OnGround: true}
+	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
+		if state == 0 {
+			return nil
+		}
+
+		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+	})
+
+	for range 20 {
+		physics.Tick(world, player, gocraft.Controls{Forward: true})
+	}
+
+	if player.Position.Z <= 8.5 {
+		t.Errorf("walking forward (yaw 0) should advance +Z, got Z = %v", player.Position.Z)
+	}
+	if !player.OnGround {
+		t.Error("player should stay on the ground while walking")
 	}
 }
