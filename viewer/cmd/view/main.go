@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"time"
 
-	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/agent"
 	"github.com/lrnxzz/go-craft/viewer"
 )
@@ -34,17 +33,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	spawn := make(chan gocraft.Vec3d, 1)
+	ready := make(chan struct{})
 	bot.OnSpawn(func() {
-		spawn <- bot.Player().Position
+		close(ready)
 	})
 
 	go bot.Run(ctx)
 
-	focus := <-spawn
+	<-ready
 	time.Sleep(3 * time.Second)
 
-	view, err := viewer.New(bot.World(), focus, *screenshot == "")
+	view, err := viewer.New(bot, *screenshot == "")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -11,9 +11,11 @@ import (
 )
 
 type Window struct {
-	handle *glfw.Window
-	width  int
-	height int
+	handle  *glfw.Window
+	width   int
+	height  int
+	cursorX float64
+	cursorY float64
 }
 
 func OpenWindow(title string, width, height int, visible bool) (*Window, error) {

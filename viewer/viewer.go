@@ -2,7 +2,7 @@ package viewer
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	gocraft "github.com/lrnxzz/go-craft"
+	"github.com/lrnxzz/go-craft/agent"
 	"github.com/lrnxzz/go-craft/viewer/gpu"
 )
 
@@ -16,10 +16,12 @@ type Viewer struct {
 	window   *gpu.Window
 	renderer *Renderer
 	camera   Camera
-	world    *gocraft.World
+	bot      *agent.Agent
+	yaw      float32
+	pitch    float32
 }
 
-func New(world *gocraft.World, focus gocraft.Vec3d, visible bool) (*Viewer, error) {
+func New(bot *agent.Agent, visible bool) (*Viewer, error) {
 	window, err := gpu.OpenWindow("gocraft", defaultWidth, defaultHeight, visible)
 	if err != nil {
 		return nil, err
@@ -38,17 +40,28 @@ func New(world *gocraft.World, focus gocraft.Vec3d, visible bool) (*Viewer, erro
 
 		return nil, err
 	}
-	renderer.Build(world)
+	renderer.Build(bot.World())
+
+	spawn := bot.Snapshot()
 
 	return &Viewer{
 		window:   window,
 		renderer: renderer,
-		camera:   lookAt(focus),
-		world:    world,
+		bot:      bot,
+		yaw:      spawn.Yaw,
+		pitch:    spawn.Pitch,
+		camera: Camera{
+			Up:     mgl32.Vec3{0, 1, 0},
+			FOV:    70,
+			Aspect: float32(defaultWidth) / float32(defaultHeight),
+			Near:   0.1,
+			Far:    2000,
+		},
 	}, nil
 }
 
 func (v *Viewer) frame() {
+	v.follow()
 	v.window.Clear(0.53, 0.71, 0.92)
 	v.renderer.Draw(v.camera)
 }
@@ -56,10 +69,12 @@ func (v *Viewer) frame() {
 func (v *Viewer) Run() {
 	defer v.window.Close()
 
+	v.window.GrabCursor()
 	for frame := 0; !v.window.ShouldClose(); frame++ {
 		if frame%remeshEvery == 0 {
-			v.renderer.Build(v.world)
+			v.renderer.Build(v.bot.World())
 		}
+		v.control()
 		v.frame()
 		v.window.Present()
 	}
@@ -71,18 +86,4 @@ func (v *Viewer) Screenshot(path string) error {
 	v.frame()
 
 	return v.window.Capture(path)
-}
-
-func lookAt(focus gocraft.Vec3d) Camera {
-	center := mgl32.Vec3{float32(focus.X), float32(focus.Y), float32(focus.Z)}
-
-	return Camera{
-		Position: center.Add(mgl32.Vec3{0, 24, 40}),
-		Target:   center,
-		Up:       mgl32.Vec3{0, 1, 0},
-		FOV:      65,
-		Aspect:   float32(defaultWidth) / float32(defaultHeight),
-		Near:     0.1,
-		Far:      2000,
-	}
 }

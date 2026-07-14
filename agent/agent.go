@@ -33,6 +33,22 @@ type Agent struct {
 
 	onSpawn      func()
 	spawnedFired bool
+	snapshot     Snapshot
+}
+
+type Snapshot struct {
+	Position gocraft.Vec3d
+	Yaw      float32
+	Pitch    float32
+	OnGround bool
+	Health   float32
+}
+
+func (a *Agent) Snapshot() Snapshot {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.snapshot
 }
 
 func Join(ctx context.Context, address, username string) (*Agent, error) {
@@ -127,6 +143,16 @@ func (a *Agent) tick() {
 
 	a.physics.Tick(a.session.World(), player, controls)
 	_ = a.session.SendPosition()
+
+	a.mu.Lock()
+	a.snapshot = Snapshot{
+		Position: player.Position,
+		Yaw:      player.Yaw,
+		Pitch:    player.Pitch,
+		OnGround: player.OnGround,
+		Health:   player.Health,
+	}
+	a.mu.Unlock()
 }
 
 func (a *Agent) pursue(player *gocraft.Player) {
