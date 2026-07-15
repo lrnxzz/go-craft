@@ -13,15 +13,19 @@ type Registry[T any] struct {
 	entries []T
 }
 
-func LoadRegistry[T any](version int32, data []byte) *Registry[T] {
-	var entries []T
-	if err := json.Unmarshal(data, &entries); err != nil {
-		panic(fmt.Sprintf("lib: registry data is invalid: %v", err))
+func LoadJSON[T any](data []byte) T {
+	var loaded T
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		panic(fmt.Sprintf("lib: embedded data is invalid: %v", err))
 	}
 
+	return loaded
+}
+
+func LoadRegistry[T any](version int32, data []byte) *Registry[T] {
 	return &Registry[T]{
 		version: version,
-		entries: entries,
+		entries: LoadJSON[[]T](data),
 	}
 }
 
