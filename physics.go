@@ -30,7 +30,6 @@ func (p *Physics) Tick(world *World, player *Player, controls Controls) {
 	if controls.Jump && player.OnGround {
 		p.Velocity.Y = jumpVelocity
 	}
-	p.Velocity.Y -= gravity
 
 	box := BoxAround(player.Position, playerWidth, playerHeight)
 	moved := p.collide(world, box, p.Velocity)
@@ -48,6 +47,7 @@ func (p *Physics) Tick(world *World, player *Player, controls Controls) {
 		p.Velocity.Z = 0
 	}
 
+	p.Velocity.Y -= gravity
 	p.Velocity.Y *= verticalDrag
 }
 
