@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -12,6 +13,7 @@ import (
 	gocraft "github.com/lrnxzz/go-craft"
 	v765 "github.com/lrnxzz/go-craft/codec/v765"
 	"github.com/lrnxzz/go-craft/codec/v765/blocks"
+	"github.com/lrnxzz/go-craft/lib"
 )
 
 const (
@@ -30,6 +32,7 @@ type Agent struct {
 	pitch    float32
 	look     bool
 	goal     *gocraft.Vec3d
+	miner    miner
 
 	onSpawn      func()
 	spawnedFired bool
@@ -74,6 +77,7 @@ func Join(ctx context.Context, address, username string) (*Agent, error) {
 		return nil, err
 	}
 	a.session = session
+	a.miner = miner{digger: session}
 
 	client.Tick(tickRate, a.tick)
 
@@ -152,6 +156,56 @@ func (a *Agent) SwapHands() error {
 	return a.session.SwapWithOffhand(gocraft.HotbarSlot(inventory.HeldIndex()))
 }
 
+func (a *Agent) Dig(reach float64) *lib.Future[gocraft.RayHit] {
+	hit, ok := a.Target(reach)
+	if !ok {
+		return lib.FailedFuture[gocraft.RayHit](errors.New("agent: no block within reach"))
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.miner.begin(hit, reach, a.session.Player().GameMode, a.session.Inventory().Held().Item)
+}
+
+func (a *Agent) StopDigging() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.miner.abandon()
+}
+
+func (a *Agent) Digging() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	_, active := a.miner.excavating()
+
+	return active
+}
+
+func (a *Agent) excavate() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	reach, active := a.miner.excavating()
+	if !active {
+		return
+	}
+
+	hit, sighted := a.Target(reach)
+	_ = a.miner.tick(hit, sighted, a.session.Inventory().Held().Item)
+}
+
+func (a *Agent) Place(reach float64) error {
+	hit, ok := a.Target(reach)
+	if !ok {
+		return errors.New("agent: no block within reach")
+	}
+
+	return a.session.PlaceBlock(hit)
+}
+
 func (a *Agent) OnSpawn(fn func()) {
 	a.onSpawn = fn
 }
@@ -180,6 +234,7 @@ func (a *Agent) tick() {
 
 	player := a.session.Player()
 	a.pursue(player)
+	a.excavate()
 
 	a.mu.Lock()
 	controls := a.controls
