@@ -108,6 +108,8 @@ func (s *Session) onEncryption(c *gocraft.Client, p *EncryptionBegin) error {
 }
 
 func (s *Session) onLoginSuccess(c *gocraft.Client, p *LoginSuccess) error {
+	p.Apply(s.player)
+
 	if err := c.Send(&LoginAcknowledged{}); err != nil {
 		return err
 	}

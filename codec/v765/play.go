@@ -67,7 +67,9 @@ func (p *JoinGame) Decode(r *gocraft.Reader) error {
 }
 
 func (p *JoinGame) Apply(player *gocraft.Player) {
+	player.EntityID = p.EntityID.Int32()
 	player.GameMode = gocraft.GameMode(p.GameMode)
+	player.Dimension = p.DimensionName
 }
 
 type PlayKeepAlive struct {
@@ -446,6 +448,7 @@ func (p *SetHealth) Decode(r *gocraft.Reader) error {
 func (p *SetHealth) Apply(player *gocraft.Player) {
 	player.Health = p.Health.Float32()
 	player.Food = p.Food.Int32()
+	player.Saturation = p.Saturation.Float32()
 }
 
 type SetPlayerPosition struct {

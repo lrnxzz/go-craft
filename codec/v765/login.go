@@ -131,6 +131,11 @@ func (p *LoginSuccess) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.UUID, &p.Username, &p.Properties)
 }
 
+func (p *LoginSuccess) Apply(player *gocraft.Player) {
+	player.UUID = p.UUID
+	player.Username = p.Username.String()
+}
+
 type SetCompression struct {
 	Threshold gocraft.VarInt
 }

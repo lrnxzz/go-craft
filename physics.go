@@ -7,8 +7,6 @@ const (
 	sprintSpeed  = 0.28
 	jumpVelocity = 0.42
 	stepHeight   = 0.6
-	playerWidth  = 0.6
-	playerHeight = 1.8
 )
 
 type Collider func(BlockState) []AABB
@@ -37,7 +35,7 @@ func (p *Physics) Tick(world *World, player *Player, controls Controls) {
 		p.Velocity.Y = jumpVelocity
 	}
 
-	box := BoxAround(player.Position, playerWidth, playerHeight)
+	box := player.Box()
 	moved := p.collide(world, box, p.Velocity)
 	if player.OnGround {
 		moved = p.stepUp(world, box, p.Velocity, moved)
