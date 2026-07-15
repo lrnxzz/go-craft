@@ -11,7 +11,7 @@ type Tiles interface {
 }
 
 func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) Geometry {
-	var b builder
+	b := newBuilder()
 
 	baseX := int(column.X) * 16
 	baseZ := int(column.Z) * 16

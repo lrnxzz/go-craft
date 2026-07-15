@@ -33,10 +33,12 @@ type Agent struct {
 
 	onSpawn      func()
 	spawnedFired bool
+	ticks        uint64
 	snapshot     Snapshot
 }
 
 type Snapshot struct {
+	Tick     uint64
 	Position gocraft.Vec3d
 	Yaw      float32
 	Pitch    float32
@@ -145,7 +147,9 @@ func (a *Agent) tick() {
 	_ = a.session.SendPosition()
 
 	a.mu.Lock()
+	a.ticks++
 	a.snapshot = Snapshot{
+		Tick:     a.ticks,
 		Position: player.Position,
 		Yaw:      player.Yaw,
 		Pitch:    player.Pitch,

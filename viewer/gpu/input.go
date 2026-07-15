@@ -18,6 +18,10 @@ func (w *Window) Pressed(key Key) bool {
 	return w.handle.GetKey(glfw.Key(key)) == glfw.Press
 }
 
+func (w *Window) Time() float64 {
+	return glfw.GetTime()
+}
+
 func (w *Window) GrabCursor() {
 	w.handle.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	w.cursorX, w.cursorY = w.handle.GetCursorPos()

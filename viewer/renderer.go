@@ -15,7 +15,7 @@ var vertexShader string
 //go:embed assets/shaders/world.frag
 var fragmentShader string
 
-const uploadsPerFrame = 4
+const uploadsPerFrame = 2
 
 type chunkKey struct {
 	x int32

@@ -19,6 +19,15 @@ type Viewer struct {
 	bot      *agent.Agent
 	yaw      float32
 	pitch    float32
+
+	from     mgl32.Vec3
+	to       mgl32.Vec3
+	since    float64
+	lastTick uint64
+
+	sprinting bool
+	wHeld     bool
+	lastW     float64
 }
 
 func New(bot *agent.Agent, visible bool) (*Viewer, error) {
@@ -43,11 +52,15 @@ func New(bot *agent.Agent, visible bool) (*Viewer, error) {
 	renderer.Build(bot.World())
 
 	spawn := bot.Snapshot()
+	eye := eyeOf(spawn.Position)
 
 	return &Viewer{
 		window:   window,
 		renderer: renderer,
 		bot:      bot,
+		from:     eye,
+		to:       eye,
+		lastTick: spawn.Tick,
 		yaw:      spawn.Yaw,
 		pitch:    spawn.Pitch,
 		camera: Camera{
