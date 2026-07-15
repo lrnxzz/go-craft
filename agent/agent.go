@@ -104,6 +104,19 @@ func (a *Agent) Look(yaw, pitch float32) {
 	a.mu.Unlock()
 }
 
+func (a *Agent) LookAt(target gocraft.Vec3d) {
+	player := a.session.Player()
+	yaw, pitch := gocraft.LookAngles(player.Eye(), target)
+
+	a.Look(yaw, pitch)
+}
+
+func (a *Agent) Target(reach float64) (gocraft.RayHit, bool) {
+	player := a.session.Player()
+
+	return a.session.World().Raycast(player.Eye(), player.LookDirection(), reach, blocks.Solid)
+}
+
 func (a *Agent) OnSpawn(fn func()) {
 	a.onSpawn = fn
 }
