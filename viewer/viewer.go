@@ -68,12 +68,14 @@ func (v *Viewer) frame() {
 
 func (v *Viewer) Run() {
 	defer v.window.Close()
+	defer v.renderer.Close()
 
 	v.window.GrabCursor()
 	for frame := 0; !v.window.ShouldClose(); frame++ {
 		if frame%remeshEvery == 0 {
 			v.renderer.Build(v.bot.World())
 		}
+		v.renderer.Collect()
 		v.control()
 		v.frame()
 		v.window.Present()
@@ -82,7 +84,9 @@ func (v *Viewer) Run() {
 
 func (v *Viewer) Screenshot(path string) error {
 	defer v.window.Close()
+	defer v.renderer.Close()
 
+	v.renderer.Flush()
 	v.frame()
 
 	return v.window.Capture(path)

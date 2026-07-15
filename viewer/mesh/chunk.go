@@ -10,7 +10,7 @@ type Tiles interface {
 	Tile(state gocraft.BlockState, face Face) gpu.UV
 }
 
-func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) *gpu.Mesh {
+func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) Geometry {
 	var b builder
 
 	baseX := int(column.X) * 16
@@ -21,12 +21,12 @@ func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) *gpu.
 	for lx := range 16 {
 		for lz := range 16 {
 			for y := minY; y < maxY; y++ {
-				state := column.Block(lx, y, lz)
+				x, z := baseX+lx, baseZ+lz
+				state, _ := world.Block(x, y, z)
 				if state == 0 {
 					continue
 				}
 
-				x, z := baseX+lx, baseZ+lz
 				for _, face := range cubeFaces {
 					if neighbor, _ := world.Block(x+face.step[0], y+face.step[1], z+face.step[2]); neighbor != 0 {
 						continue
@@ -37,5 +37,5 @@ func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) *gpu.
 		}
 	}
 
-	return b.upload()
+	return b.geometry()
 }

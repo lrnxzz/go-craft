@@ -5,6 +5,18 @@ import (
 	"github.com/lrnxzz/go-craft/viewer/gpu"
 )
 
+type Geometry struct {
+	vertices []float32
+	indices  []uint32
+}
+
+func (g Geometry) Upload() *gpu.Mesh {
+	return gpu.NewMesh(g.vertices, g.indices,
+		gpu.Attribute{Location: 0, Size: 3},
+		gpu.Attribute{Location: 1, Size: 2},
+		gpu.Attribute{Location: 2, Size: 1})
+}
+
 type builder struct {
 	vertices []float32
 	quads    int
@@ -22,9 +34,6 @@ func (b *builder) quad(origin mgl32.Vec3, face cubeFace, uv gpu.UV) {
 	b.quads++
 }
 
-func (b *builder) upload() *gpu.Mesh {
-	return gpu.NewMesh(b.vertices, gpu.QuadIndices(b.quads),
-		gpu.Attribute{Location: 0, Size: 3},
-		gpu.Attribute{Location: 1, Size: 2},
-		gpu.Attribute{Location: 2, Size: 1})
+func (b *builder) geometry() Geometry {
+	return Geometry{vertices: b.vertices, indices: gpu.QuadIndices(b.quads)}
 }
