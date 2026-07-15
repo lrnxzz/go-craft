@@ -31,6 +31,9 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[PlayKeepAliveResponse](proto)
 	gocraft.Bind[SetPlayerPosition](proto)
 	gocraft.Bind[SetPlayerPositionRotation](proto)
+	gocraft.Bind[HeldItemChange](proto)
+	gocraft.Bind[ClickContainer](proto)
+	gocraft.Bind[CloseContainer](proto)
 	gocraft.Bind[JoinGame](proto)
 	gocraft.Bind[PlayKeepAlive](proto)
 	gocraft.Bind[SyncPlayerPosition](proto)
@@ -41,6 +44,9 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[SetHealth](proto)
 	gocraft.Bind[PlayerAbilities](proto)
 	gocraft.Bind[SetExperience](proto)
+	gocraft.Bind[SetContainerContent](proto)
+	gocraft.Bind[SetContainerSlot](proto)
+	gocraft.Bind[SetHeldItem](proto)
 	gocraft.Bind[PlayDisconnect](proto)
 
 	return proto

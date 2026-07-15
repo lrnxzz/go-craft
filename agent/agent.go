@@ -117,6 +117,41 @@ func (a *Agent) Target(reach float64) (gocraft.RayHit, bool) {
 	return a.session.World().Raycast(player.Eye(), player.LookDirection(), reach, blocks.Solid)
 }
 
+func (a *Agent) Inventory() *gocraft.Inventory {
+	return a.session.Inventory()
+}
+
+func (a *Agent) SelectHotbar(index int) error {
+	return a.session.SelectHotbar(index)
+}
+
+func (a *Agent) Hold(item gocraft.ItemID) error {
+	inventory := a.session.Inventory()
+
+	if inventory.Held().Is(item) {
+		return nil
+	}
+
+	for index := range gocraft.HotbarSize {
+		if inventory.Hotbar(index).Is(item) {
+			return a.session.SelectHotbar(index)
+		}
+	}
+
+	slot, ok := inventory.FindItem(item)
+	if !ok {
+		return fmt.Errorf("agent: item %d is not in the inventory", item)
+	}
+
+	return a.session.SwapWithHotbar(slot, inventory.HeldIndex())
+}
+
+func (a *Agent) SwapHands() error {
+	inventory := a.session.Inventory()
+
+	return a.session.SwapWithOffhand(gocraft.HotbarSlot(inventory.HeldIndex()))
+}
+
 func (a *Agent) OnSpawn(fn func()) {
 	a.onSpawn = fn
 }
