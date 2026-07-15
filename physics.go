@@ -3,6 +3,10 @@ package gocraft
 const (
 	gravity      = 0.08
 	verticalDrag = 0.98
+	walkSpeed    = 0.21
+	sprintSpeed  = 0.28
+	jumpVelocity = 0.42
+	stepHeight   = 0.6
 	playerWidth  = 0.6
 	playerHeight = 1.8
 )
@@ -35,6 +39,9 @@ func (p *Physics) Tick(world *World, player *Player, controls Controls) {
 
 	box := BoxAround(player.Position, playerWidth, playerHeight)
 	moved := p.collide(world, box, p.Velocity)
+	if player.OnGround {
+		moved = p.stepUp(world, box, p.Velocity, moved)
+	}
 
 	player.OnGround = p.Velocity.Y < 0 && moved.Y != p.Velocity.Y
 	player.Position = player.Position.Add(moved)
@@ -51,6 +58,27 @@ func (p *Physics) Tick(world *World, player *Player, controls Controls) {
 
 	p.Velocity.Y -= gravity
 	p.Velocity.Y *= verticalDrag
+}
+
+func (p *Physics) stepUp(world *World, box AABB, velocity, moved Vec3d) Vec3d {
+	blocked := moved.X != velocity.X || moved.Z != velocity.Z
+	if !blocked {
+		return moved
+	}
+
+	climb := p.collide(world, box, Vec3(velocity.X, stepHeight, velocity.Z))
+	if climb.Y <= 0 {
+		return moved
+	}
+
+	settle := p.collide(world, box.Offset(climb), Vec3(0, -climb.Y, 0))
+	stepped := climb.Add(settle)
+
+	if stepped.HorizontalLength() <= moved.HorizontalLength() {
+		return moved
+	}
+
+	return stepped
 }
 
 func (p *Physics) collide(world *World, box AABB, velocity Vec3d) Vec3d {

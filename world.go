@@ -62,6 +62,10 @@ func (w *World) Columns() []*Column {
 	return columns
 }
 
+func (w *World) BlockAt(p Position) (BlockState, bool) {
+	return w.Block(p.X, p.Y, p.Z)
+}
+
 func (w *World) Block(x, y, z int) (BlockState, bool) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()

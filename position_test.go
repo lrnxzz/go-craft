@@ -6,6 +6,71 @@ import (
 	gocraft "github.com/lrnxzz/go-craft"
 )
 
+type blockFaceCase struct {
+	face gocraft.BlockFace
+	want gocraft.Position
+}
+
+func TestBlockFaceNeighbors(t *testing.T) {
+	origin := gocraft.Position{
+		X: 10,
+		Y: 64,
+		Z: -3,
+	}
+
+	cases := []blockFaceCase{
+		{
+			face: gocraft.FaceUp,
+			want: origin.Add(0, 1, 0),
+		},
+		{
+			face: gocraft.FaceDown,
+			want: origin.Add(0, -1, 0),
+		},
+		{
+			face: gocraft.FaceNorth,
+			want: origin.Add(0, 0, -1),
+		},
+		{
+			face: gocraft.FaceSouth,
+			want: origin.Add(0, 0, 1),
+		},
+		{
+			face: gocraft.FaceWest,
+			want: origin.Add(-1, 0, 0),
+		},
+		{
+			face: gocraft.FaceEast,
+			want: origin.Add(1, 0, 0),
+		},
+	}
+	for _, c := range cases {
+		got := origin.Neighbor(c.face)
+		if got != c.want {
+			t.Errorf("Neighbor(%v) = %v, want %v", c.face, got, c.want)
+		}
+
+		back := got.Neighbor(c.face.Opposite())
+		if back != origin {
+			t.Errorf("round trip through %v and %v = %v, want %v", c.face, c.face.Opposite(), back, origin)
+		}
+	}
+}
+
+func TestPositionCenter(t *testing.T) {
+	block := gocraft.Position{
+		X: 1,
+		Y: 2,
+		Z: -4,
+	}
+
+	got := block.Center()
+	want := gocraft.Vec3(1.5, 2.5, -3.5)
+	if got != want {
+		t.Errorf("Center() = %v, want %v", got, want)
+	}
+}
+
 func TestPositionRecoversPackedCoordinates(t *testing.T) {
 	positions := []gocraft.Position{
 		{X: 0, Y: 0, Z: 0},

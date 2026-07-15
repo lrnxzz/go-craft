@@ -19,7 +19,9 @@ func TestPhysicsLandsOnGround(t *testing.T) {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
+		return []gocraft.AABB{
+			gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 1, 1)),
+		}
 	})
 
 	for range 200 {
@@ -44,7 +46,9 @@ func TestPhysicsFallsThroughAir(t *testing.T) {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
+		return []gocraft.AABB{
+			gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 1, 1)),
+		}
 	})
 
 	for range 3 {
@@ -76,7 +80,9 @@ func TestPhysicsWalksForward(t *testing.T) {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
+		return []gocraft.AABB{
+			gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 1, 1)),
+		}
 	})
 
 	for range 20 {
@@ -108,7 +114,9 @@ func TestPhysicsJumpClearsOneBlock(t *testing.T) {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
+		return []gocraft.AABB{
+			gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 1, 1)),
+		}
 	})
 
 	peak := player.Position.Y
@@ -119,5 +127,48 @@ func TestPhysicsJumpClearsOneBlock(t *testing.T) {
 
 	if peak < 2 {
 		t.Errorf("jump should clear a full block, peak Y = %v (want >= 2)", peak)
+	}
+}
+
+func TestPhysicsStepsOntoSlab(t *testing.T) {
+	column := gocraft.ChunkColumn(0, 0, -64, 384)
+	for x := range 16 {
+		for z := range 16 {
+			column.SetBlock(x, 0, z, 1)
+		}
+	}
+	column.SetBlock(8, 1, 10, 2)
+
+	world := gocraft.NewWorld()
+	world.LoadColumn(column)
+
+	player := &gocraft.Player{
+		Position: gocraft.Vec3(8.5, 1, 8.5),
+		OnGround: true,
+	}
+	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
+		switch state {
+		case 1:
+			return []gocraft.AABB{
+				gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 1, 1)),
+			}
+		case 2:
+			return []gocraft.AABB{
+				gocraft.Box(gocraft.Vec3(0, 0, 0), gocraft.Vec3(1, 0.5, 1)),
+			}
+		default:
+			return nil
+		}
+	})
+
+	for range 8 {
+		physics.Tick(world, player, gocraft.Controls{Forward: true})
+	}
+
+	if got := player.Position.Y; got != 1.5 {
+		t.Errorf("player Y = %v, want 1.5 standing on the slab", got)
+	}
+	if z := player.Position.Z; z <= 10 || z >= 11 {
+		t.Errorf("player Z = %v, want to be over the slab", z)
 	}
 }

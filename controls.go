@@ -2,12 +2,6 @@ package gocraft
 
 import "math"
 
-const (
-	walkSpeed    = 0.21
-	sprintSpeed  = 0.28
-	jumpVelocity = 0.42
-)
-
 type Controls struct {
 	Forward bool
 	Back    bool

@@ -38,8 +38,75 @@ func (p Position) Add(dx, dy, dz int) Position {
 	}
 }
 
+func (p Position) Neighbor(face BlockFace) Position {
+	offset := face.Offset()
+
+	return p.Add(offset.X, offset.Y, offset.Z)
+}
+
+func (p Position) Corner() Vec3d {
+	return Vec3(float64(p.X), float64(p.Y), float64(p.Z))
+}
+
+func (p Position) Center() Vec3d {
+	return Vec3(float64(p.X)+0.5, float64(p.Y)+0.5, float64(p.Z)+0.5)
+}
+
 func (p Position) String() string {
 	return fmt.Sprintf("(%d, %d, %d)", p.X, p.Y, p.Z)
+}
+
+type BlockFace uint8
+
+const (
+	FaceDown BlockFace = iota
+	FaceUp
+	FaceNorth
+	FaceSouth
+	FaceWest
+	FaceEast
+)
+
+var faceOffsets = [...]Position{
+	FaceDown:  {Y: -1},
+	FaceUp:    {Y: 1},
+	FaceNorth: {Z: -1},
+	FaceSouth: {Z: 1},
+	FaceWest:  {X: -1},
+	FaceEast:  {X: 1},
+}
+
+var faceNames = [...]string{
+	FaceDown:  "down",
+	FaceUp:    "up",
+	FaceNorth: "north",
+	FaceSouth: "south",
+	FaceWest:  "west",
+	FaceEast:  "east",
+}
+
+func (f BlockFace) Offset() Position {
+	if int(f) >= len(faceOffsets) {
+		return Position{}
+	}
+
+	return faceOffsets[f]
+}
+
+func (f BlockFace) Normal() Vec3d {
+	return f.Offset().Corner()
+}
+
+func (f BlockFace) Opposite() BlockFace {
+	return f ^ 1
+}
+
+func (f BlockFace) String() string {
+	if int(f) >= len(faceNames) {
+		return fmt.Sprintf("face(%d)", uint8(f))
+	}
+
+	return faceNames[f]
 }
 
 type Angle uint8
