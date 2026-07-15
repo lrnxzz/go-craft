@@ -1,15 +1,21 @@
 package gocraft
 
-type Biome int32
+type BiomeID int32
 
-var biomePalette = paletteKind{entries: 64, indirectMax: 3, directBits: 6}
-
-func NewBiomes() PalettedContainer[Biome] {
-	return PalettedContainer[Biome]{kind: biomePalette}
+var biomePalette = paletteType{
+	entries:     64,
+	indirectMax: 3,
+	directBits:  6,
 }
 
-type BiomeInfo struct {
-	ID               Biome      `json:"id"`
+func Biomes() PalettedContainer[BiomeID] {
+	return PalettedContainer[BiomeID]{
+		paletteType: biomePalette,
+	}
+}
+
+type Biome struct {
+	ID               BiomeID    `json:"id"`
 	Name             Identifier `json:"name"`
 	Temperature      float32    `json:"temperature"`
 	Dimension        Identifier `json:"dimension"`

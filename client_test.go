@@ -14,13 +14,13 @@ func TestClientDispatchesReceivedPacket(t *testing.T) {
 	clientSide, serverSide := net.Pipe()
 
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	client := gocraft.NewClient(gocraft.NewConn(clientSide), proto)
 	client.SetState(gocraft.StatePlay)
 
 	got := make(chan keepAlivePacket, 1)
-	gocraft.On[*keepAlivePacket](client, gocraft.StatePlay, func(c *gocraft.Client, p *keepAlivePacket) error {
+	gocraft.On[*keepAlivePacket](client, func(c *gocraft.Client, p *keepAlivePacket) error {
 		got <- *p
 
 		return c.Close()
@@ -52,7 +52,7 @@ func TestClientSkipsUnhandledPackets(t *testing.T) {
 	clientSide, serverSide := net.Pipe()
 
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	client := gocraft.NewClient(gocraft.NewConn(clientSide), proto)
 	client.SetState(gocraft.StatePlay)
@@ -89,14 +89,14 @@ func TestClientReaderNotBlockedByPendingWrites(t *testing.T) {
 	clientSide, serverSide := net.Pipe()
 
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	client := gocraft.NewClient(gocraft.NewConn(clientSide), proto)
 	client.SetState(gocraft.StatePlay)
 
 	const count = 2
 	seen := make(chan gocraft.Long, count)
-	gocraft.On[*keepAlivePacket](client, gocraft.StatePlay, func(c *gocraft.Client, p *keepAlivePacket) error {
+	gocraft.On[*keepAlivePacket](client, func(c *gocraft.Client, p *keepAlivePacket) error {
 		seen <- p.Nonce
 
 		return c.Send(&keepAlivePacket{Nonce: p.Nonce})

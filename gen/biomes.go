@@ -24,7 +24,7 @@ import gocraft "github.com/lrnxzz/go-craft"
 
 const (
 {{- range .Entries}}
-	{{.Ident}} gocraft.Biome = {{.ID}}
+	{{.Ident}} gocraft.BiomeID = {{.ID}}
 {{- end}}
 )
 `))

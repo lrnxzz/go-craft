@@ -2,87 +2,121 @@ package gocraft
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
 )
+
+const packetBuffer = 256
+
+var errClientClosed = errors.New("gocraft: client closed")
 
 type ticker struct {
 	rate time.Duration
 	fn   func()
 }
 
-type inbound struct {
-	state  State
-	packet Packet
+type loop struct {
+	inbound  chan Packet
+	outbound chan Packet
+	tick     ticker
+	done     chan struct{}
+	once     sync.Once
+}
+
+func (l *loop) send(packet Packet) error {
+	select {
+	case l.outbound <- packet:
+		return nil
+	case <-l.done:
+		return errors.New("gocraft: send on a closed client")
+	}
+}
+
+func (l *loop) close() {
+	l.once.Do(func() {
+		slog.Debug("disconnecting")
+		close(l.done)
+	})
+}
+
+func (l *loop) closed() bool {
+	select {
+	case <-l.done:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Client) Tick(rate time.Duration, fn func()) {
-	c.tick = ticker{rate: rate, fn: fn}
+	c.loop.tick = ticker{
+		rate: rate,
+		fn:   fn,
+	}
 }
 
 func (c *Client) Run(parent context.Context) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 
+	group, ctx := errgroup.WithContext(ctx)
+
 	stop := context.AfterFunc(ctx, func() {
-		c.Close()
+		_ = c.Close()
 	})
 	defer stop()
 
-	packets := make(chan inbound, 256)
-
-	var group errgroup.Group
-
 	group.Go(func() error {
-		defer cancel()
-
-		return c.read(ctx, packets)
+		return c.receive(ctx)
 	})
 	group.Go(func() error {
-		defer cancel()
-
-		return c.loop(ctx, packets)
+		return c.dispatch(ctx)
 	})
 	group.Go(func() error {
-		defer cancel()
-
-		return c.sender.loop(ctx)
+		return c.transmit(ctx)
 	})
 
-	return group.Wait()
+	err := group.Wait()
+	if errors.Is(err, errClientClosed) {
+		return nil
+	}
+
+	return err
 }
 
-func (c *Client) read(ctx context.Context, packets chan<- inbound) error {
+func (c *Client) receive(ctx context.Context) error {
 	for {
-		frame, err := c.conn.ReadFrame()
+		frame, err := c.transport.ReadFrame()
 		if err != nil {
 			return c.exit(ctx, err)
 		}
 
-		state := c.State()
-		packet, known, err := c.protocol.Decode(state, Clientbound, frame)
+		packet, known, err := c.protocol.Decode(c.State(), Clientbound, frame)
 		if err != nil {
 			return err
 		}
 		if !known {
 			slog.Debug("skipped unknown packet", "id", frame.ID)
+
 			continue
 		}
 
 		select {
-		case packets <- inbound{state: state, packet: packet}:
+		case c.loop.inbound <- packet:
 		case <-ctx.Done():
 			return ctx.Err()
 		}
 	}
 }
 
-func (c *Client) loop(ctx context.Context, packets <-chan inbound) error {
+func (c *Client) dispatch(ctx context.Context) error {
 	var pulse <-chan time.Time
-	if c.tick.fn != nil {
-		t := time.NewTicker(c.tick.rate)
+	if c.loop.tick.fn != nil {
+		t := time.NewTicker(c.loop.tick.rate)
 		defer t.Stop()
 		pulse = t.C
 	}
@@ -91,13 +125,39 @@ func (c *Client) loop(ctx context.Context, packets <-chan inbound) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case in := <-packets:
-			slog.Debug("received", "packet", in.packet.Name())
-			if err := c.listeners.dispatch(c, in.state, in.packet); err != nil {
+		case packet := <-c.loop.inbound:
+			slog.Debug("received", "packet", packet.Name())
+			if err := c.listeners.dispatch(c, packet); err != nil {
 				return err
 			}
 		case <-pulse:
-			c.tick.fn()
+			c.loop.tick.fn()
 		}
+	}
+}
+
+func (c *Client) transmit(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case packet := <-c.loop.outbound:
+			if err := c.transport.WriteFrame(EncodeFrame(packet)); err != nil {
+				return err
+			}
+
+			slog.Debug("sent", "packet", packet.Name())
+		}
+	}
+}
+
+func (c *Client) exit(ctx context.Context, readErr error) error {
+	switch {
+	case ctx.Err() != nil:
+		return ctx.Err()
+	case c.loop.closed():
+		return errClientClosed
+	default:
+		return readErr
 	}
 }

@@ -15,7 +15,9 @@ type Physics struct {
 }
 
 func NewPhysics(collider Collider) *Physics {
-	return &Physics{collider: collider}
+	return &Physics{
+		collider: collider,
+	}
 }
 
 func (p *Physics) Tick(world *World, player *Player, controls Controls) {
@@ -71,7 +73,7 @@ func (p *Physics) collide(world *World, box AABB, velocity Vec3d) Vec3d {
 		dz = o.ClampZ(box, dz)
 	}
 
-	return Vec3d{dx, dy, dz}
+	return Vec3(dx, dy, dz)
 }
 
 func (p *Physics) obstacles(world *World, region AABB) []AABB {
@@ -81,11 +83,11 @@ func (p *Physics) obstacles(world *World, region AABB) []AABB {
 	for x := lo.X; x <= hi.X; x++ {
 		for y := lo.Y; y <= hi.Y; y++ {
 			for z := lo.Z; z <= hi.Z; z++ {
-				corner := Vec3d{float64(x), float64(y), float64(z)}
+				corner := Vec3(float64(x), float64(y), float64(z))
 
 				state, ok := world.Block(x, y, z)
 				if !ok {
-					boxes = append(boxes, AABB{Min: corner, Max: corner.Offset(1, 1, 1)})
+					boxes = append(boxes, Box(corner, corner.Offset(1, 1, 1)))
 
 					continue
 				}

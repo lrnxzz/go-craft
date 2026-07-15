@@ -21,6 +21,14 @@ func (*ClientInformation) Name() string {
 	return "ClientInformation"
 }
 
+func (*ClientInformation) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ClientInformation) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
 func (p ClientInformation) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Locale, p.ViewDistance, p.ChatMode, p.ChatColors,
 		p.DisplayedSkinParts, p.MainHand, p.EnableTextFiltering, p.EnableServerListing)
@@ -43,6 +51,14 @@ func (*ConfigDisconnect) Name() string {
 	return "ConfigDisconnect"
 }
 
+func (*ConfigDisconnect) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ConfigDisconnect) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p ConfigDisconnect) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Reason)
 }
@@ -61,11 +77,45 @@ func (*FinishConfiguration) Name() string {
 	return "FinishConfiguration"
 }
 
+func (*FinishConfiguration) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*FinishConfiguration) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (FinishConfiguration) Append(dst []byte) []byte {
 	return dst
 }
 
 func (*FinishConfiguration) Decode(*gocraft.Reader) error {
+	return nil
+}
+
+type AcknowledgeConfiguration struct{}
+
+func (*AcknowledgeConfiguration) ID() int32 {
+	return 0x02
+}
+
+func (*AcknowledgeConfiguration) Name() string {
+	return "AcknowledgeConfiguration"
+}
+
+func (*AcknowledgeConfiguration) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*AcknowledgeConfiguration) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
+func (AcknowledgeConfiguration) Append(dst []byte) []byte {
+	return dst
+}
+
+func (*AcknowledgeConfiguration) Decode(*gocraft.Reader) error {
 	return nil
 }
 
@@ -79,6 +129,14 @@ func (*ConfigKeepAlive) ID() int32 {
 
 func (*ConfigKeepAlive) Name() string {
 	return "ConfigKeepAlive"
+}
+
+func (*ConfigKeepAlive) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ConfigKeepAlive) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p ConfigKeepAlive) Append(dst []byte) []byte {
@@ -101,6 +159,14 @@ func (*ConfigKeepAliveResponse) Name() string {
 	return "ConfigKeepAliveResponse"
 }
 
+func (*ConfigKeepAliveResponse) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ConfigKeepAliveResponse) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
 func (p ConfigKeepAliveResponse) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.KeepAliveID)
 }
@@ -119,6 +185,14 @@ func (*ConfigPing) ID() int32 {
 
 func (*ConfigPing) Name() string {
 	return "ConfigPing"
+}
+
+func (*ConfigPing) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ConfigPing) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p ConfigPing) Append(dst []byte) []byte {
@@ -141,6 +215,14 @@ func (*ConfigPong) Name() string {
 	return "ConfigPong"
 }
 
+func (*ConfigPong) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*ConfigPong) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
 func (p ConfigPong) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.PingID)
 }
@@ -161,6 +243,14 @@ func (*RegistryData) Name() string {
 	return "RegistryData"
 }
 
+func (*RegistryData) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*RegistryData) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p RegistryData) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Codec)
 }
@@ -179,6 +269,14 @@ func (*FeatureFlags) ID() int32 {
 
 func (*FeatureFlags) Name() string {
 	return "FeatureFlags"
+}
+
+func (*FeatureFlags) State() gocraft.State {
+	return gocraft.StateConfiguration
+}
+
+func (*FeatureFlags) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p FeatureFlags) Append(dst []byte) []byte {

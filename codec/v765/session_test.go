@@ -12,7 +12,7 @@ import (
 	"github.com/lrnxzz/go-craft/codec/v765"
 )
 
-func liveServer(t *testing.T) (string, uint16) {
+func liveServer(t *testing.T) (host string, port uint16) {
 	t.Helper()
 
 	addr := os.Getenv("GOCRAFT_IT_ADDR")
@@ -25,12 +25,12 @@ func liveServer(t *testing.T) (string, uint16) {
 		t.Fatalf("GOCRAFT_IT_ADDR %q: %v", addr, err)
 	}
 
-	port, err := strconv.ParseUint(raw, 10, 16)
+	parsed, err := strconv.ParseUint(raw, 10, 16)
 	if err != nil {
 		t.Fatalf("GOCRAFT_IT_ADDR port %q: %v", raw, err)
 	}
 
-	return host, uint16(port)
+	return host, uint16(parsed)
 }
 
 func TestJoinReachesPlay(t *testing.T) {

@@ -25,7 +25,7 @@ type chunkKey struct {
 type meshJob struct {
 	key    chunkKey
 	world  *gocraft.World
-	column *gocraft.ChunkColumn
+	column *gocraft.Column
 }
 
 type meshResult struct {

@@ -100,6 +100,10 @@ func (v *Bool) Decode(r *Reader) error {
 	return nil
 }
 
+func (v Bool) Bool() bool {
+	return bool(v)
+}
+
 func (v Byte) Append(dst []byte) []byte {
 	return appendBE(dst, uint8(v))
 }
@@ -111,6 +115,14 @@ func (v *Byte) Decode(r *Reader) error {
 	}
 	*v = Byte(raw)
 	return nil
+}
+
+func (v Byte) Int8() int8 {
+	return int8(v)
+}
+
+func (v Byte) Int() int {
+	return int(v)
 }
 
 func (v UByte) Append(dst []byte) []byte {
@@ -126,6 +138,14 @@ func (v *UByte) Decode(r *Reader) error {
 	return nil
 }
 
+func (v UByte) Uint8() uint8 {
+	return uint8(v)
+}
+
+func (v UByte) Int() int {
+	return int(v)
+}
+
 func (v Short) Append(dst []byte) []byte {
 	return appendBE(dst, uint16(v))
 }
@@ -137,6 +157,14 @@ func (v *Short) Decode(r *Reader) error {
 	}
 	*v = Short(raw)
 	return nil
+}
+
+func (v Short) Int16() int16 {
+	return int16(v)
+}
+
+func (v Short) Int() int {
+	return int(v)
 }
 
 func (v UShort) Append(dst []byte) []byte {
@@ -152,6 +180,14 @@ func (v *UShort) Decode(r *Reader) error {
 	return nil
 }
 
+func (v UShort) Uint16() uint16 {
+	return uint16(v)
+}
+
+func (v UShort) Int() int {
+	return int(v)
+}
+
 func (v Int) Append(dst []byte) []byte {
 	return appendBE(dst, uint32(v))
 }
@@ -165,6 +201,18 @@ func (v *Int) Decode(r *Reader) error {
 	return nil
 }
 
+func (v Int) Int32() int32 {
+	return int32(v)
+}
+
+func (v Int) Int64() int64 {
+	return int64(v)
+}
+
+func (v Int) Int() int {
+	return int(v)
+}
+
 func (v Long) Append(dst []byte) []byte {
 	return appendBE(dst, uint64(v))
 }
@@ -176,6 +224,18 @@ func (v *Long) Decode(r *Reader) error {
 	}
 	*v = Long(raw)
 	return nil
+}
+
+func (v Long) Int64() int64 {
+	return int64(v)
+}
+
+func (v Long) Int() int {
+	return int(v)
+}
+
+func (v Long) Uint64() uint64 {
+	return uint64(v)
 }
 
 func (v Long) Signed(offset, size int) int64 {
@@ -199,6 +259,14 @@ func (v *Float) Decode(r *Reader) error {
 	return nil
 }
 
+func (v Float) Float32() float32 {
+	return float32(v)
+}
+
+func (v Float) Float64() float64 {
+	return float64(v)
+}
+
 func (v Double) Append(dst []byte) []byte {
 	return appendBE(dst, math.Float64bits(float64(v)))
 }
@@ -210,6 +278,10 @@ func (v *Double) Decode(r *Reader) error {
 	}
 	*v = Double(math.Float64frombits(raw))
 	return nil
+}
+
+func (v Double) Float64() float64 {
+	return float64(v)
 }
 
 func (v VarInt) Append(dst []byte) []byte {
@@ -225,6 +297,18 @@ func (v *VarInt) Decode(r *Reader) error {
 	return nil
 }
 
+func (v VarInt) Int32() int32 {
+	return int32(v)
+}
+
+func (v VarInt) Int64() int64 {
+	return int64(v)
+}
+
+func (v VarInt) Int() int {
+	return int(v)
+}
+
 func (v VarLong) Append(dst []byte) []byte {
 	return AppendVar(dst, v)
 }
@@ -236,6 +320,14 @@ func (v *VarLong) Decode(r *Reader) error {
 	}
 	*v = val
 	return nil
+}
+
+func (v VarLong) Int64() int64 {
+	return int64(v)
+}
+
+func (v VarLong) Int() int {
+	return int(v)
 }
 
 func (v String) Append(dst []byte) []byte {
@@ -257,6 +349,10 @@ func (v *String) Decode(r *Reader) error {
 	}
 	*v = String(raw)
 	return nil
+}
+
+func (v String) String() string {
+	return string(v)
 }
 
 func (v UUID) Append(dst []byte) []byte {
@@ -332,7 +428,10 @@ type Option[T Field] struct {
 }
 
 func Some[T Field](v T) Option[T] {
-	return Option[T]{value: v, present: true}
+	return Option[T]{
+		value:   v,
+		present: true,
+	}
 }
 
 func None[T Field]() Option[T] {

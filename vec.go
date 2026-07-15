@@ -11,28 +11,36 @@ type Vec3d struct {
 	Z float64
 }
 
+func Vec3(x, y, z float64) Vec3d {
+	return Vec3d{
+		X: x,
+		Y: y,
+		Z: z,
+	}
+}
+
 func (v Vec3d) Add(o Vec3d) Vec3d {
-	return Vec3d{v.X + o.X, v.Y + o.Y, v.Z + o.Z}
+	return Vec3(v.X+o.X, v.Y+o.Y, v.Z+o.Z)
 }
 
 func (v Vec3d) Sub(o Vec3d) Vec3d {
-	return Vec3d{v.X - o.X, v.Y - o.Y, v.Z - o.Z}
+	return Vec3(v.X-o.X, v.Y-o.Y, v.Z-o.Z)
 }
 
 func (v Vec3d) Mul(o Vec3d) Vec3d {
-	return Vec3d{v.X * o.X, v.Y * o.Y, v.Z * o.Z}
+	return Vec3(v.X*o.X, v.Y*o.Y, v.Z*o.Z)
 }
 
 func (v Vec3d) Scale(s float64) Vec3d {
-	return Vec3d{v.X * s, v.Y * s, v.Z * s}
+	return Vec3(v.X*s, v.Y*s, v.Z*s)
 }
 
 func (v Vec3d) Neg() Vec3d {
-	return Vec3d{-v.X, -v.Y, -v.Z}
+	return Vec3(-v.X, -v.Y, -v.Z)
 }
 
 func (v Vec3d) Offset(dx, dy, dz float64) Vec3d {
-	return Vec3d{v.X + dx, v.Y + dy, v.Z + dz}
+	return Vec3(v.X+dx, v.Y+dy, v.Z+dz)
 }
 
 func (v Vec3d) Dot(o Vec3d) float64 {

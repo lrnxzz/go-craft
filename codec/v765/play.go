@@ -44,6 +44,14 @@ func (*JoinGame) Name() string {
 	return "JoinGame"
 }
 
+func (*JoinGame) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*JoinGame) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p JoinGame) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.EntityID, p.Hardcore, p.Worlds, p.MaxPlayers, p.ViewDistance,
 		p.SimulationDistance, p.ReducedDebugInfo, p.EnableRespawnScreen, p.LimitedCrafting,
@@ -58,6 +66,10 @@ func (p *JoinGame) Decode(r *gocraft.Reader) error {
 		&p.Debug, &p.Flat, &p.Death, &p.PortalCooldown)
 }
 
+func (p *JoinGame) Apply(player *gocraft.Player) {
+	player.GameMode = gocraft.GameMode(p.GameMode)
+}
+
 type PlayKeepAlive struct {
 	KeepAliveID gocraft.Long
 }
@@ -68,6 +80,14 @@ func (*PlayKeepAlive) ID() int32 {
 
 func (*PlayKeepAlive) Name() string {
 	return "PlayKeepAlive"
+}
+
+func (*PlayKeepAlive) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*PlayKeepAlive) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p PlayKeepAlive) Append(dst []byte) []byte {
@@ -88,6 +108,14 @@ func (*PlayKeepAliveResponse) ID() int32 {
 
 func (*PlayKeepAliveResponse) Name() string {
 	return "PlayKeepAliveResponse"
+}
+
+func (*PlayKeepAliveResponse) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*PlayKeepAliveResponse) Direction() gocraft.Direction {
+	return gocraft.Serverbound
 }
 
 func (p PlayKeepAliveResponse) Append(dst []byte) []byte {
@@ -116,6 +144,14 @@ func (*SyncPlayerPosition) Name() string {
 	return "SyncPlayerPosition"
 }
 
+func (*SyncPlayerPosition) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SyncPlayerPosition) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p SyncPlayerPosition) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.X, p.Y, p.Z, p.Yaw, p.Pitch, p.Flags, p.TeleportID)
 }
@@ -135,7 +171,7 @@ const (
 func (p *SyncPlayerPosition) Apply(player *gocraft.Player) {
 	flags := byte(p.Flags)
 
-	target := gocraft.Vec3d{X: float64(p.X), Y: float64(p.Y), Z: float64(p.Z)}
+	target := gocraft.Vec3(p.X.Float64(), p.Y.Float64(), p.Z.Float64())
 	if flags&relativeX != 0 {
 		target.X += player.Position.X
 	}
@@ -146,7 +182,7 @@ func (p *SyncPlayerPosition) Apply(player *gocraft.Player) {
 		target.Z += player.Position.Z
 	}
 
-	yaw, pitch := float32(p.Yaw), float32(p.Pitch)
+	yaw, pitch := p.Yaw.Float32(), p.Pitch.Float32()
 	if flags&relativeYaw != 0 {
 		yaw += player.Yaw
 	}
@@ -171,6 +207,14 @@ func (*ConfirmTeleport) Name() string {
 	return "ConfirmTeleport"
 }
 
+func (*ConfirmTeleport) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*ConfirmTeleport) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
 func (p ConfirmTeleport) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.TeleportID)
 }
@@ -189,6 +233,14 @@ func (*PlayDisconnect) ID() int32 {
 
 func (*PlayDisconnect) Name() string {
 	return "PlayDisconnect"
+}
+
+func (*PlayDisconnect) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*PlayDisconnect) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p PlayDisconnect) Append(dst []byte) []byte {
@@ -214,12 +266,29 @@ func (*ChunkData) Name() string {
 	return "ChunkData"
 }
 
+func (*ChunkData) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*ChunkData) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p ChunkData) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.X, p.Z, p.Heightmaps, p.Sections)
 }
 
 func (p *ChunkData) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.X, &p.Z, &p.Heightmaps, &p.Sections)
+}
+
+func (p *ChunkData) Column(minY, height int) (*gocraft.Column, error) {
+	column := gocraft.ChunkColumn(p.X.Int32(), p.Z.Int32(), minY, height)
+	if err := column.Decode(gocraft.NewReader(p.Sections)); err != nil {
+		return nil, err
+	}
+
+	return column, nil
 }
 
 type UnloadChunk struct {
@@ -235,6 +304,14 @@ func (*UnloadChunk) Name() string {
 	return "UnloadChunk"
 }
 
+func (*UnloadChunk) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*UnloadChunk) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p UnloadChunk) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Z, p.X)
 }
@@ -245,7 +322,7 @@ func (p *UnloadChunk) Decode(r *gocraft.Reader) error {
 
 type BlockUpdate struct {
 	Location gocraft.Position
-	State    gocraft.VarInt
+	Block    gocraft.VarInt
 }
 
 func (*BlockUpdate) ID() int32 {
@@ -256,12 +333,20 @@ func (*BlockUpdate) Name() string {
 	return "BlockUpdate"
 }
 
+func (*BlockUpdate) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*BlockUpdate) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p BlockUpdate) Append(dst []byte) []byte {
-	return gocraft.AppendAll(dst, p.Location, p.State)
+	return gocraft.AppendAll(dst, p.Location, p.Block)
 }
 
 func (p *BlockUpdate) Decode(r *gocraft.Reader) error {
-	return gocraft.DecodeAll(r, &p.Location, &p.State)
+	return gocraft.DecodeAll(r, &p.Location, &p.Block)
 }
 
 type BlockChange struct {
@@ -276,7 +361,7 @@ func (p *BlockUpdate) Change() BlockChange {
 		X:     p.Location.X,
 		Y:     p.Location.Y,
 		Z:     p.Location.Z,
-		State: gocraft.BlockState(p.State),
+		State: gocraft.BlockState(p.Block),
 	}
 }
 
@@ -291,6 +376,14 @@ func (*SectionBlocksUpdate) ID() int32 {
 
 func (*SectionBlocksUpdate) Name() string {
 	return "SectionBlocksUpdate"
+}
+
+func (*SectionBlocksUpdate) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SectionBlocksUpdate) Direction() gocraft.Direction {
+	return gocraft.Clientbound
 }
 
 func (p SectionBlocksUpdate) Append(dst []byte) []byte {
@@ -334,12 +427,25 @@ func (*SetHealth) Name() string {
 	return "SetHealth"
 }
 
+func (*SetHealth) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SetHealth) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p SetHealth) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.Health, p.Food, p.Saturation)
 }
 
 func (p *SetHealth) Decode(r *gocraft.Reader) error {
 	return gocraft.DecodeAll(r, &p.Health, &p.Food, &p.Saturation)
+}
+
+func (p *SetHealth) Apply(player *gocraft.Player) {
+	player.Health = p.Health.Float32()
+	player.Food = p.Food.Int32()
 }
 
 type SetPlayerPosition struct {
@@ -355,6 +461,14 @@ func (*SetPlayerPosition) ID() int32 {
 
 func (*SetPlayerPosition) Name() string {
 	return "SetPlayerPosition"
+}
+
+func (*SetPlayerPosition) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SetPlayerPosition) Direction() gocraft.Direction {
+	return gocraft.Serverbound
 }
 
 func (p SetPlayerPosition) Append(dst []byte) []byte {
@@ -380,6 +494,14 @@ func (*SetPlayerPositionRotation) ID() int32 {
 
 func (*SetPlayerPositionRotation) Name() string {
 	return "SetPlayerPositionRotation"
+}
+
+func (*SetPlayerPositionRotation) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SetPlayerPositionRotation) Direction() gocraft.Direction {
+	return gocraft.Serverbound
 }
 
 func (p SetPlayerPositionRotation) Append(dst []byte) []byte {

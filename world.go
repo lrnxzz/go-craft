@@ -7,30 +7,37 @@ type chunkPos struct {
 	Z int32
 }
 
+func chunkAt(x, z int32) chunkPos {
+	return chunkPos{
+		X: x,
+		Z: z,
+	}
+}
+
 type World struct {
 	mu      sync.RWMutex
-	columns map[chunkPos]*ChunkColumn
+	columns map[chunkPos]*Column
 }
 
 func NewWorld() *World {
-	return &World{columns: make(map[chunkPos]*ChunkColumn)}
+	return &World{columns: make(map[chunkPos]*Column)}
 }
 
-func (w *World) LoadColumn(c *ChunkColumn) {
+func (w *World) LoadColumn(c *Column) {
 	w.mu.Lock()
-	w.columns[chunkPos{c.X, c.Z}] = c
+	w.columns[chunkAt(c.X, c.Z)] = c
 	w.mu.Unlock()
 }
 
 func (w *World) UnloadColumn(x, z int32) {
 	w.mu.Lock()
-	delete(w.columns, chunkPos{x, z})
+	delete(w.columns, chunkAt(x, z))
 	w.mu.Unlock()
 }
 
-func (w *World) Column(x, z int32) (*ChunkColumn, bool) {
+func (w *World) Column(x, z int32) (*Column, bool) {
 	w.mu.RLock()
-	c, ok := w.columns[chunkPos{x, z}]
+	c, ok := w.columns[chunkAt(x, z)]
 	w.mu.RUnlock()
 
 	return c, ok
@@ -43,11 +50,11 @@ func (w *World) Loaded() int {
 	return len(w.columns)
 }
 
-func (w *World) Columns() []*ChunkColumn {
+func (w *World) Columns() []*Column {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 
-	columns := make([]*ChunkColumn, 0, len(w.columns))
+	columns := make([]*Column, 0, len(w.columns))
 	for _, column := range w.columns {
 		columns = append(columns, column)
 	}
@@ -59,7 +66,7 @@ func (w *World) Block(x, y, z int) (BlockState, bool) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 
-	c, ok := w.columns[chunkPos{int32(x >> 4), int32(z >> 4)}]
+	c, ok := w.columns[chunkAt(int32(x>>4), int32(z>>4))]
 	if !ok {
 		return 0, false
 	}
@@ -74,7 +81,7 @@ func (w *World) SetBlock(x, y, z int, state BlockState) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	c, ok := w.columns[chunkPos{int32(x >> 4), int32(z >> 4)}]
+	c, ok := w.columns[chunkAt(int32(x>>4), int32(z>>4))]
 	if !ok {
 		return
 	}

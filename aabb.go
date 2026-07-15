@@ -5,10 +5,10 @@ type AABB struct {
 	Max Vec3d
 }
 
-func NewAABB(a, b Vec3d) AABB {
+func Box(a, b Vec3d) AABB {
 	return AABB{
-		Min: Vec3d{min(a.X, b.X), min(a.Y, b.Y), min(a.Z, b.Z)},
-		Max: Vec3d{max(a.X, b.X), max(a.Y, b.Y), max(a.Z, b.Z)},
+		Min: Vec3(min(a.X, b.X), min(a.Y, b.Y), min(a.Z, b.Z)),
+		Max: Vec3(max(a.X, b.X), max(a.Y, b.Y), max(a.Z, b.Z)),
 	}
 }
 
@@ -16,23 +16,26 @@ func BoxAround(feet Vec3d, width, height float64) AABB {
 	half := width / 2
 
 	return AABB{
-		Min: Vec3d{feet.X - half, feet.Y, feet.Z - half},
-		Max: Vec3d{feet.X + half, feet.Y + height, feet.Z + half},
+		Min: Vec3(feet.X-half, feet.Y, feet.Z-half),
+		Max: Vec3(feet.X+half, feet.Y+height, feet.Z+half),
 	}
 }
 
 func (b AABB) Offset(d Vec3d) AABB {
-	return AABB{b.Min.Add(d), b.Max.Add(d)}
+	return AABB{
+		Min: b.Min.Add(d),
+		Max: b.Max.Add(d),
+	}
 }
 
 func (b AABB) OffsetXYZ(dx, dy, dz float64) AABB {
-	return b.Offset(Vec3d{dx, dy, dz})
+	return b.Offset(Vec3(dx, dy, dz))
 }
 
 func (b AABB) Grow(dx, dy, dz float64) AABB {
 	return AABB{
-		Min: Vec3d{b.Min.X - dx, b.Min.Y - dy, b.Min.Z - dz},
-		Max: Vec3d{b.Max.X + dx, b.Max.Y + dy, b.Max.Z + dz},
+		Min: Vec3(b.Min.X-dx, b.Min.Y-dy, b.Min.Z-dz),
+		Max: Vec3(b.Max.X+dx, b.Max.Y+dy, b.Max.Z+dz),
 	}
 }
 

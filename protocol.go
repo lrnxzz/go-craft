@@ -50,6 +50,8 @@ func (d Direction) String() string {
 type Packet interface {
 	ID() int32
 	Name() string
+	State() State
+	Direction() Direction
 	Append(dst []byte) []byte
 	Decode(r *Reader) error
 }
@@ -65,7 +67,9 @@ type Protocol struct {
 }
 
 func NewProtocol() *Protocol {
-	return &Protocol{factories: make(map[packetKey]func() Packet)}
+	return &Protocol{
+		factories: make(map[packetKey]func() Packet),
+	}
 }
 
 type packetPtr[T any] interface {
@@ -73,18 +77,19 @@ type packetPtr[T any] interface {
 	Packet
 }
 
-func Bind[T any, P packetPtr[T]](proto *Protocol, state State, dir Direction) {
+func Bind[T any, P packetPtr[T]](proto *Protocol) {
 	factory := func() Packet {
 		return P(new(T))
 	}
 
+	prototype := factory()
 	key := packetKey{
-		state: state,
-		dir:   dir,
-		id:    factory().ID(),
+		state: prototype.State(),
+		dir:   prototype.Direction(),
+		id:    prototype.ID(),
 	}
 	if _, exists := proto.factories[key]; exists {
-		panic(fmt.Sprintf("gocraft: duplicate packet registration for %s %s id 0x%02x", state, dir, key.id))
+		panic(fmt.Sprintf("gocraft: duplicate packet registration for %s %s id 0x%02x", key.state, key.dir, key.id))
 	}
 	proto.factories[key] = factory
 }
@@ -105,7 +110,7 @@ func (proto *Protocol) NewPacket(state State, dir Direction, id int32) (Packet, 
 }
 
 func (proto *Protocol) Decode(state State, dir Direction, frame Frame) (Packet, bool, error) {
-	packet, ok := proto.NewPacket(state, dir, int32(frame.ID))
+	packet, ok := proto.NewPacket(state, dir, frame.ID.Int32())
 	if !ok {
 		return nil, false, nil
 	}

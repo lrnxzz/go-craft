@@ -82,7 +82,7 @@ func Ping(ctx context.Context, address string) (Status, error) {
 		return Status{}, err
 	}
 
-	target := net.JoinHostPort(string(host), strconv.Itoa(int(port)))
+	target := net.JoinHostPort(host.String(), strconv.Itoa(port.Int()))
 
 	conn, err := Dial(ctx, target)
 	if err != nil {

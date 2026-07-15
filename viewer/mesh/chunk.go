@@ -10,7 +10,7 @@ type Tiles interface {
 	Tile(state gocraft.BlockState, face Face) gpu.UV
 }
 
-func Chunk(world *gocraft.World, column *gocraft.ChunkColumn, tiles Tiles) Geometry {
+func Chunk(world *gocraft.World, column *gocraft.Column, tiles Tiles) Geometry {
 	b := newBuilder()
 
 	baseX := int(column.X) * 16

@@ -17,6 +17,14 @@ func (*Handshake) Name() string {
 	return "Handshake"
 }
 
+func (*Handshake) State() gocraft.State {
+	return gocraft.StateHandshaking
+}
+
+func (*Handshake) Direction() gocraft.Direction {
+	return gocraft.Serverbound
+}
+
 func (p Handshake) Append(dst []byte) []byte {
 	return gocraft.AppendAll(dst, p.ProtocolVersion, p.ServerAddress, p.ServerPort, p.NextState)
 }

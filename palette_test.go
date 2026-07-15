@@ -11,7 +11,7 @@ func TestPalettedContainerDecodesSingleValued(t *testing.T) {
 	payload = gocraft.AppendVar(payload, gocraft.VarInt(42))
 	payload = gocraft.AppendVar(payload, gocraft.VarInt(0))
 
-	container := gocraft.NewBlockStates()
+	container := gocraft.BlockStates()
 	if err := container.Decode(gocraft.NewReader(payload)); err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestPalettedContainerDecodesIndirect(t *testing.T) {
 		payload = gocraft.Long(long).Append(payload)
 	}
 
-	container := gocraft.NewBlockStates()
+	container := gocraft.BlockStates()
 	if err := container.Decode(gocraft.NewReader(payload)); err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestPalettedContainerDecodesIndirect(t *testing.T) {
 }
 
 func TestPalettedContainerSetUpgradesFromSingle(t *testing.T) {
-	container := gocraft.NewBlockStates()
+	container := gocraft.BlockStates()
 
 	container.Set(0, 5)
 	container.Set(1, 5)
@@ -68,14 +68,14 @@ func TestPalettedContainerSetUpgradesFromSingle(t *testing.T) {
 }
 
 func TestPalettedContainerSetOverflowsToDirect(t *testing.T) {
-	container := gocraft.NewBiomes()
+	container := gocraft.Biomes()
 
 	for i := 0; i < 20; i++ {
-		container.Set(i, gocraft.Biome(i))
+		container.Set(i, gocraft.BiomeID(i))
 	}
 
 	for i := 0; i < 20; i++ {
-		if got := container.Get(i); got != gocraft.Biome(i) {
+		if got := container.Get(i); got != gocraft.BiomeID(i) {
 			t.Errorf("Get(%d) = %d, want %d", i, got, i)
 		}
 	}

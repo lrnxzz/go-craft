@@ -8,7 +8,7 @@ import (
 
 func TestWorldTracksLoadedColumns(t *testing.T) {
 	world := gocraft.NewWorld()
-	world.LoadColumn(gocraft.NewChunkColumn(1, -1, -64, 384))
+	world.LoadColumn(gocraft.ChunkColumn(1, -1, -64, 384))
 
 	if _, ok := world.Column(1, -1); !ok {
 		t.Fatal("column (1, -1) not loaded")
@@ -25,7 +25,7 @@ func TestWorldTracksLoadedColumns(t *testing.T) {
 
 func TestWorldResolvesBlocksAcrossChunkBounds(t *testing.T) {
 	world := gocraft.NewWorld()
-	world.LoadColumn(gocraft.NewChunkColumn(1, -1, -64, 384))
+	world.LoadColumn(gocraft.ChunkColumn(1, -1, -64, 384))
 
 	world.SetBlock(20, 70, -5, 42)
 

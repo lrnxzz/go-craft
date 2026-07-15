@@ -19,6 +19,14 @@ func (*keepAlivePacket) Name() string {
 	return "KeepAlive"
 }
 
+func (*keepAlivePacket) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*keepAlivePacket) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
 func (p keepAlivePacket) Append(dst []byte) []byte {
 	return gocraft.Marshal(p.Nonce, p.Label)
 }
@@ -33,7 +41,7 @@ func (p *keepAlivePacket) Decode(r *gocraft.Reader) error {
 
 func TestProtocolDecodesRegisteredPacket(t *testing.T) {
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	original := &keepAlivePacket{
 		Nonce: 99,
@@ -74,7 +82,7 @@ func TestProtocolUnknownPacket(t *testing.T) {
 
 func TestProtocolIsolatesStateAndDirection(t *testing.T) {
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	if _, ok := proto.NewPacket(gocraft.StateLogin, gocraft.Clientbound, 0x2A); ok {
 		t.Error("packet leaked across states")
@@ -86,7 +94,7 @@ func TestProtocolIsolatesStateAndDirection(t *testing.T) {
 
 func TestBindPanicsOnDuplicateRegistration(t *testing.T) {
 	proto := gocraft.NewProtocol()
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 
 	defer func() {
 		if recover() == nil {
@@ -94,7 +102,7 @@ func TestBindPanicsOnDuplicateRegistration(t *testing.T) {
 		}
 	}()
 
-	gocraft.Bind[keepAlivePacket](proto, gocraft.StatePlay, gocraft.Clientbound)
+	gocraft.Bind[keepAlivePacket](proto)
 }
 
 func TestStateAndDirectionString(t *testing.T) {

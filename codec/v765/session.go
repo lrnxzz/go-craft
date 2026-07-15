@@ -3,6 +3,7 @@ package v765
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	gocraft "github.com/lrnxzz/go-craft"
@@ -75,35 +76,35 @@ func (s *Session) Spawned() bool {
 }
 
 func (s *Session) listen() {
-	gocraft.On(s.client, gocraft.StateLogin, s.onCompression)
-	gocraft.On(s.client, gocraft.StateLogin, s.onEncryption)
-	gocraft.On(s.client, gocraft.StateLogin, s.onLoginSuccess)
-	gocraft.On(s.client, gocraft.StateLogin, s.onLoginDisconnect)
+	gocraft.On(s.client, s.onCompression)
+	gocraft.On(s.client, s.onEncryption)
+	gocraft.On(s.client, s.onLoginSuccess)
+	gocraft.On(s.client, s.onLoginDisconnect)
 
-	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigKeepAlive)
-	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigPing)
-	gocraft.On(s.client, gocraft.StateConfiguration, s.onFinishConfiguration)
-	gocraft.On(s.client, gocraft.StateConfiguration, s.onConfigDisconnect)
+	gocraft.On(s.client, s.onConfigKeepAlive)
+	gocraft.On(s.client, s.onConfigPing)
+	gocraft.On(s.client, s.onFinishConfiguration)
+	gocraft.On(s.client, s.onConfigDisconnect)
 
-	gocraft.On(s.client, gocraft.StatePlay, s.onJoinGame)
-	gocraft.On(s.client, gocraft.StatePlay, s.onKeepAlive)
-	gocraft.On(s.client, gocraft.StatePlay, s.onSyncPosition)
-	gocraft.On(s.client, gocraft.StatePlay, s.onChunkData)
-	gocraft.On(s.client, gocraft.StatePlay, s.onUnloadChunk)
-	gocraft.On(s.client, gocraft.StatePlay, s.onBlockUpdate)
-	gocraft.On(s.client, gocraft.StatePlay, s.onSectionBlocks)
-	gocraft.On(s.client, gocraft.StatePlay, s.onHealth)
-	gocraft.On(s.client, gocraft.StatePlay, s.onPlayDisconnect)
+	gocraft.On(s.client, s.onJoinGame)
+	gocraft.On(s.client, s.onKeepAlive)
+	gocraft.On(s.client, s.onSyncPosition)
+	gocraft.On(s.client, s.onChunkData)
+	gocraft.On(s.client, s.onUnloadChunk)
+	gocraft.On(s.client, s.onBlockUpdate)
+	gocraft.On(s.client, s.onSectionBlocks)
+	gocraft.On(s.client, s.onHealth)
+	gocraft.On(s.client, s.onPlayDisconnect)
 }
 
 func (s *Session) onCompression(c *gocraft.Client, p *SetCompression) error {
-	c.SetCompression(int(p.Threshold))
+	c.SetCompression(p.Threshold.Int())
 
 	return nil
 }
 
 func (s *Session) onEncryption(c *gocraft.Client, p *EncryptionBegin) error {
-	return fmt.Errorf("v765: server requested encryption (online-mode); auth and encryption are not implemented")
+	return errors.New("v765: server requested encryption (online-mode); auth and encryption are not implemented")
 }
 
 func (s *Session) onLoginSuccess(c *gocraft.Client, p *LoginSuccess) error {
@@ -134,7 +135,7 @@ func (s *Session) onConfigPing(c *gocraft.Client, p *ConfigPing) error {
 }
 
 func (s *Session) onFinishConfiguration(c *gocraft.Client, p *FinishConfiguration) error {
-	if err := c.Send(&FinishConfiguration{}); err != nil {
+	if err := c.Send(&AcknowledgeConfiguration{}); err != nil {
 		return err
 	}
 
@@ -144,11 +145,11 @@ func (s *Session) onFinishConfiguration(c *gocraft.Client, p *FinishConfiguratio
 }
 
 func (s *Session) onConfigDisconnect(c *gocraft.Client, p *ConfigDisconnect) error {
-	return fmt.Errorf("v765: kicked during configuration")
+	return errors.New("v765: kicked during configuration")
 }
 
 func (s *Session) onJoinGame(c *gocraft.Client, p *JoinGame) error {
-	s.player.GameMode = gocraft.GameMode(p.GameMode)
+	p.Apply(s.player)
 
 	if s.ready != nil {
 		return s.ready(c, p)
@@ -184,8 +185,8 @@ func (s *Session) SendPosition() error {
 }
 
 func (s *Session) onChunkData(c *gocraft.Client, p *ChunkData) error {
-	column := gocraft.NewChunkColumn(int32(p.X), int32(p.Z), overworldMinY, overworldHeight)
-	if err := column.Decode(gocraft.NewReader(p.Sections)); err != nil {
+	column, err := p.Column(overworldMinY, overworldHeight)
+	if err != nil {
 		return err
 	}
 
@@ -195,7 +196,7 @@ func (s *Session) onChunkData(c *gocraft.Client, p *ChunkData) error {
 }
 
 func (s *Session) onUnloadChunk(c *gocraft.Client, p *UnloadChunk) error {
-	s.world.UnloadColumn(int32(p.X), int32(p.Z))
+	s.world.UnloadColumn(p.X.Int32(), p.Z.Int32())
 
 	return nil
 }
@@ -216,12 +217,11 @@ func (s *Session) onSectionBlocks(c *gocraft.Client, p *SectionBlocksUpdate) err
 }
 
 func (s *Session) onHealth(c *gocraft.Client, p *SetHealth) error {
-	s.player.Health = float32(p.Health)
-	s.player.Food = int32(p.Food)
+	p.Apply(s.player)
 
 	return nil
 }
 
 func (s *Session) onPlayDisconnect(c *gocraft.Client, p *PlayDisconnect) error {
-	return fmt.Errorf("v765: kicked during play")
+	return errors.New("v765: kicked during play")
 }

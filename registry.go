@@ -19,7 +19,10 @@ func LoadRegistry[T any](version int32, data []byte) *Registry[T] {
 		panic(fmt.Sprintf("gocraft: registry data is invalid: %v", err))
 	}
 
-	return &Registry[T]{version: version, entries: entries}
+	return &Registry[T]{
+		version: version,
+		entries: entries,
+	}
 }
 
 func (r *Registry[T]) Version() int32 {

@@ -1,34 +1,37 @@
 package gocraft
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"sync/atomic"
 )
 
+type Transport interface {
+	ReadFrame() (Frame, error)
+	WriteFrame(Frame) error
+	SetThreshold(int)
+	Close() error
+}
+
 type Client struct {
-	conn      *Conn
+	transport Transport
 	protocol  *Protocol
 	state     atomic.Uint32
 	listeners listeners
-	sender    *sender
-	tick      ticker
-	done      chan struct{}
-	closeOnce sync.Once
+	loop      loop
 }
 
-func NewClient(conn *Conn, protocol *Protocol) *Client {
-	client := &Client{
-		conn:      conn,
+func NewClient(transport Transport, protocol *Protocol) *Client {
+	return &Client{
+		transport: transport,
 		protocol:  protocol,
 		listeners: make(listeners),
-		sender:    newSender(conn),
-		done:      make(chan struct{}),
+		loop: loop{
+			inbound:  make(chan Packet, packetBuffer),
+			outbound: make(chan Packet, packetBuffer),
+			done:     make(chan struct{}),
+		},
 	}
-
-	return client
 }
 
 func (c *Client) State() State {
@@ -41,56 +44,29 @@ func (c *Client) SetState(state State) {
 }
 
 func (c *Client) Send(packet Packet) error {
-	select {
-	case c.sender.outbound <- packet:
-		return nil
-	case <-c.done:
-		return fmt.Errorf("gocraft: send on a closed client")
-	}
+	return c.loop.send(packet)
 }
 
 func (c *Client) SetCompression(threshold int) {
 	slog.Debug("enabled compression", "threshold", threshold)
-	c.conn.SetThreshold(threshold)
+	c.transport.SetThreshold(threshold)
 }
 
 func (c *Client) Close() error {
-	c.closeOnce.Do(func() {
-		slog.Debug("disconnecting")
-		close(c.done)
-	})
+	c.loop.close()
 
-	return c.conn.Close()
+	return c.transport.Close()
 }
 
-func (c *Client) closed() bool {
-	select {
-	case <-c.done:
-		return true
-	default:
-		return false
-	}
-}
-
-func On[P Packet](c *Client, state State, handler func(*Client, P) error) {
+func On[P Packet](c *Client, handler func(*Client, P) error) {
 	var prototype P
-	key := handlerKey{
-		state: state,
-		id:    prototype.ID(),
-	}
 
-	c.listeners.add(key, func(client *Client, packet Packet) error {
-		return handler(client, packet.(P))
+	c.listeners.add(prototype.Name(), func(client *Client, packet Packet) error {
+		typed, ok := packet.(P)
+		if !ok {
+			return fmt.Errorf("gocraft: handler for %s received %T", prototype.Name(), packet)
+		}
+
+		return handler(client, typed)
 	})
-}
-
-func (c *Client) exit(ctx context.Context, readErr error) error {
-	switch {
-	case ctx.Err() != nil:
-		return ctx.Err()
-	case c.closed():
-		return nil
-	default:
-		return readErr
-	}
 }

@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/spf13/cobra"
 )
 
@@ -262,10 +263,9 @@ func dereference(merged map[string]string, ref string, depth int) string {
 }
 
 func trimNamespace(ref string) string {
-	ref = strings.TrimPrefix(ref, "minecraft:")
-	ref = strings.TrimPrefix(ref, "block/")
+	path := gocraft.Identifier(ref).Path()
 
-	return ref
+	return strings.TrimPrefix(path, "block/")
 }
 
 func assignTiles(faces map[string]faceNames) map[string]int {

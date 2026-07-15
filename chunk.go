@@ -3,12 +3,12 @@ package gocraft
 type ChunkSection struct {
 	blockCount Short
 	blocks     PalettedContainer[BlockState]
-	biomes     PalettedContainer[Biome]
+	biomes     PalettedContainer[BiomeID]
 }
 
 func (s *ChunkSection) Decode(r *Reader) error {
-	s.blocks = NewBlockStates()
-	s.biomes = NewBiomes()
+	s.blocks = BlockStates()
+	s.biomes = Biomes()
 
 	return DecodeAll(r, &s.blockCount, &s.blocks, &s.biomes)
 }
@@ -38,25 +38,25 @@ func (s *ChunkSection) SetBlock(x, y, z int, state BlockState) {
 	}
 }
 
-func (s ChunkSection) Biome(x, y, z int) Biome {
+func (s ChunkSection) Biome(x, y, z int) BiomeID {
 	return s.biomes.Get(y>>2<<4 | z>>2<<2 | x>>2)
 }
 
-type ChunkColumn struct {
+type Column struct {
 	X        int32
 	Z        int32
 	minY     int
 	sections []ChunkSection
 }
 
-func NewChunkColumn(x, z int32, minY, height int) *ChunkColumn {
+func ChunkColumn(x, z int32, minY, height int) *Column {
 	sections := make([]ChunkSection, height/16)
 	for i := range sections {
-		sections[i].blocks = NewBlockStates()
-		sections[i].biomes = NewBiomes()
+		sections[i].blocks = BlockStates()
+		sections[i].biomes = Biomes()
 	}
 
-	return &ChunkColumn{
+	return &Column{
 		X:        x,
 		Z:        z,
 		minY:     minY,
@@ -64,7 +64,7 @@ func NewChunkColumn(x, z int32, minY, height int) *ChunkColumn {
 	}
 }
 
-func (c *ChunkColumn) Decode(r *Reader) error {
+func (c *Column) Decode(r *Reader) error {
 	for i := range c.sections {
 		if err := c.sections[i].Decode(r); err != nil {
 			return err
@@ -74,23 +74,31 @@ func (c *ChunkColumn) Decode(r *Reader) error {
 	return nil
 }
 
-func (c *ChunkColumn) Section(index int) *ChunkSection {
+func (c *Column) Section(index int) *ChunkSection {
 	return &c.sections[index]
 }
 
-func (c *ChunkColumn) Block(x, y, z int) BlockState {
+func (c *Column) MinY() int {
+	return c.minY
+}
+
+func (c *Column) Height() int {
+	return len(c.sections) * 16
+}
+
+func (c *Column) Block(x, y, z int) BlockState {
 	offset := y - c.minY
 
 	return c.sections[offset>>4].Block(x, offset&15, z)
 }
 
-func (c *ChunkColumn) SetBlock(x, y, z int, state BlockState) {
+func (c *Column) SetBlock(x, y, z int, state BlockState) {
 	offset := y - c.minY
 
 	c.sections[offset>>4].SetBlock(x, offset&15, z, state)
 }
 
-func (c *ChunkColumn) Biome(x, y, z int) Biome {
+func (c *Column) Biome(x, y, z int) BiomeID {
 	offset := y - c.minY
 
 	return c.sections[offset>>4].Biome(x, offset&15, z)

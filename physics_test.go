@@ -7,19 +7,19 @@ import (
 )
 
 func TestPhysicsLandsOnGround(t *testing.T) {
-	column := gocraft.NewChunkColumn(0, 0, -64, 384)
+	column := gocraft.ChunkColumn(0, 0, -64, 384)
 	column.SetBlock(0, 0, 0, 1)
 
 	world := gocraft.NewWorld()
 	world.LoadColumn(column)
 
-	player := &gocraft.Player{Position: gocraft.Vec3d{X: 0.5, Y: 5, Z: 0.5}}
+	player := &gocraft.Player{Position: gocraft.Vec3(0.5, 5, 0.5)}
 	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
 		if state == 0 {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
 	})
 
 	for range 200 {
@@ -36,15 +36,15 @@ func TestPhysicsLandsOnGround(t *testing.T) {
 
 func TestPhysicsFallsThroughAir(t *testing.T) {
 	world := gocraft.NewWorld()
-	world.LoadColumn(gocraft.NewChunkColumn(0, 0, -64, 384))
+	world.LoadColumn(gocraft.ChunkColumn(0, 0, -64, 384))
 
-	player := &gocraft.Player{Position: gocraft.Vec3d{X: 0.5, Y: 100, Z: 0.5}}
+	player := &gocraft.Player{Position: gocraft.Vec3(0.5, 100, 0.5)}
 	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
 		if state == 0 {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
 	})
 
 	for range 3 {
@@ -60,7 +60,7 @@ func TestPhysicsFallsThroughAir(t *testing.T) {
 }
 
 func TestPhysicsWalksForward(t *testing.T) {
-	column := gocraft.NewChunkColumn(0, 0, -64, 384)
+	column := gocraft.ChunkColumn(0, 0, -64, 384)
 	for x := range 16 {
 		for z := range 16 {
 			column.SetBlock(x, 0, z, 1)
@@ -70,13 +70,13 @@ func TestPhysicsWalksForward(t *testing.T) {
 	world := gocraft.NewWorld()
 	world.LoadColumn(column)
 
-	player := &gocraft.Player{Position: gocraft.Vec3d{X: 8, Y: 1, Z: 8}, OnGround: true}
+	player := &gocraft.Player{Position: gocraft.Vec3(8, 1, 8), OnGround: true}
 	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
 		if state == 0 {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
 	})
 
 	for range 20 {
@@ -92,7 +92,7 @@ func TestPhysicsWalksForward(t *testing.T) {
 }
 
 func TestPhysicsJumpClearsOneBlock(t *testing.T) {
-	column := gocraft.NewChunkColumn(0, 0, -64, 384)
+	column := gocraft.ChunkColumn(0, 0, -64, 384)
 	for x := range 16 {
 		for z := range 16 {
 			column.SetBlock(x, 0, z, 1)
@@ -102,13 +102,13 @@ func TestPhysicsJumpClearsOneBlock(t *testing.T) {
 	world := gocraft.NewWorld()
 	world.LoadColumn(column)
 
-	player := &gocraft.Player{Position: gocraft.Vec3d{X: 8, Y: 1, Z: 8}, OnGround: true}
+	player := &gocraft.Player{Position: gocraft.Vec3(8, 1, 8), OnGround: true}
 	physics := gocraft.NewPhysics(func(state gocraft.BlockState) []gocraft.AABB {
 		if state == 0 {
 			return nil
 		}
 
-		return []gocraft.AABB{gocraft.NewAABB(gocraft.Vec3d{}, gocraft.Vec3d{X: 1, Y: 1, Z: 1})}
+		return []gocraft.AABB{gocraft.Box(gocraft.Vec3d{}, gocraft.Vec3(1, 1, 1))}
 	})
 
 	peak := player.Position.Y

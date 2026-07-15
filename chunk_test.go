@@ -36,10 +36,10 @@ func TestChunkSectionDecodesBlocksAndBiomes(t *testing.T) {
 	}
 }
 
-func TestChunkColumnResolvesSectionByWorldY(t *testing.T) {
+func TestColumnResolvesSectionByWorldY(t *testing.T) {
 	payload := append(singleSection(10, 0), singleSection(20, 0)...)
 
-	column := gocraft.NewChunkColumn(3, -4, -64, 32)
+	column := gocraft.ChunkColumn(3, -4, -64, 32)
 	if err := column.Decode(gocraft.NewReader(payload)); err != nil {
 		t.Fatal(err)
 	}
