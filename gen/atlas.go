@@ -26,6 +26,27 @@ const (
 	modelsURL   = "https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.20.2/blocks_models.json"
 )
 
+type versionManifest struct {
+	Versions []manifestVersion `json:"versions"`
+}
+
+type manifestVersion struct {
+	ID  string `json:"id"`
+	URL string `json:"url"`
+}
+
+type clientVersion struct {
+	Downloads clientDownloads `json:"downloads"`
+}
+
+type clientDownloads struct {
+	Client clientJar `json:"client"`
+}
+
+type clientJar struct {
+	URL string `json:"url"`
+}
+
 type blockModel struct {
 	Parent   string            `json:"parent"`
 	Textures map[string]string `json:"textures"`
@@ -142,12 +163,7 @@ func fetchClientJar() ([]byte, error) {
 		return nil, err
 	}
 
-	var manifest struct {
-		Versions []struct {
-			ID  string `json:"id"`
-			URL string `json:"url"`
-		} `json:"versions"`
-	}
+	var manifest versionManifest
 	if err := json.Unmarshal(raw, &manifest); err != nil {
 		return nil, err
 	}
@@ -167,18 +183,12 @@ func fetchClientJar() ([]byte, error) {
 		return nil, err
 	}
 
-	var version struct {
-		Downloads struct {
-			Client struct {
-				URL string `json:"url"`
-			} `json:"client"`
-		} `json:"downloads"`
-	}
-	if err := json.Unmarshal(raw, &version); err != nil {
+	var detail clientVersion
+	if err := json.Unmarshal(raw, &detail); err != nil {
 		return nil, err
 	}
 
-	return fetch(version.Downloads.Client.URL)
+	return fetch(detail.Downloads.Client.URL)
 }
 
 func fetch(url string) ([]byte, error) {
@@ -305,13 +315,12 @@ func writeAtlas(pathname string, textures map[string]image.Image, index map[stri
 		}
 	}
 
-	file, err := os.Create(pathname)
-	if err != nil {
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, canvas); err != nil {
 		return err
 	}
-	defer file.Close()
 
-	return png.Encode(file, canvas)
+	return os.WriteFile(pathname, encoded.Bytes(), 0o644)
 }
 
 func writeBlocks(pathname string, faces map[string]faceNames, index map[string]int) error {
@@ -354,9 +363,9 @@ func tint(pixel color.Color, tinted bool) color.Color {
 	r, g, b, a := pixel.RGBA()
 
 	return color.RGBA{
-		R: uint8(uint32(r>>8) * 124 / 255),
-		G: uint8(uint32(g>>8) * 189 / 255),
-		B: uint8(uint32(b>>8) * 84 / 255),
+		R: uint8((r >> 8) * 124 / 255),
+		G: uint8((g >> 8) * 189 / 255),
+		B: uint8((b >> 8) * 84 / 255),
 		A: uint8(a >> 8),
 	}
 }

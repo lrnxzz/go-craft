@@ -18,6 +18,11 @@ type generator[T any] struct {
 	template *template.Template
 }
 
+type versionedEntries[T any] struct {
+	Version string
+	Entries []T
+}
+
 func (g generator[T]) command() *cobra.Command {
 	return &cobra.Command{
 		Use:   g.name + " <version>",
@@ -40,11 +45,13 @@ func (g generator[T]) render(version string) error {
 		return err
 	}
 
+	input := versionedEntries[T]{
+		Version: version,
+		Entries: entries,
+	}
+
 	var rendered strings.Builder
-	if err := g.template.Execute(&rendered, struct {
-		Version string
-		Entries []T
-	}{version, entries}); err != nil {
+	if err := g.template.Execute(&rendered, input); err != nil {
 		return err
 	}
 
