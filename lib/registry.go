@@ -1,4 +1,4 @@
-package gocraft
+package lib
 
 import (
 	"cmp"
@@ -16,7 +16,7 @@ type Registry[T any] struct {
 func LoadRegistry[T any](version int32, data []byte) *Registry[T] {
 	var entries []T
 	if err := json.Unmarshal(data, &entries); err != nil {
-		panic(fmt.Sprintf("gocraft: registry data is invalid: %v", err))
+		panic(fmt.Sprintf("lib: registry data is invalid: %v", err))
 	}
 
 	return &Registry[T]{
