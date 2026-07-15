@@ -148,7 +148,7 @@ func (p *devicePoll) run(ctx context.Context) (TokenSet, error) {
 		}
 	}
 
-	return TokenSet{}, fmt.Errorf("mojang: device code expired before authorization")
+	return TokenSet{}, errors.New("mojang: device code expired before authorization")
 }
 
 func (p *devicePoll) wait(ctx context.Context) error {

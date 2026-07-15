@@ -3,6 +3,7 @@ package mojang
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -215,7 +216,7 @@ func (x *Xbox) authorize(ctx context.Context, target string, body []byte) (XboxT
 		return XboxToken{}, err
 	}
 	if len(decoded.DisplayClaims.XUI) == 0 {
-		return XboxToken{}, fmt.Errorf("mojang: xbox response carries no user claims")
+		return XboxToken{}, errors.New("mojang: xbox response carries no user claims")
 	}
 
 	return XboxToken{

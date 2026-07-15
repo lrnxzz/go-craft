@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
+	"errors"
 )
 
 type Offline struct {
@@ -13,7 +13,7 @@ type Offline struct {
 
 func (o Offline) Authenticate(_ context.Context) (Session, error) {
 	if o.Username == "" {
-		return Session{}, fmt.Errorf("mojang: offline username is empty")
+		return Session{}, errors.New("mojang: offline username is empty")
 	}
 
 	return Session{

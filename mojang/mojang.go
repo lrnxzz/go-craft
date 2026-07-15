@@ -110,7 +110,7 @@ func (m *Mojang) HasJoined(ctx context.Context, username, serverID string) (Prof
 	return profile, nil
 }
 
-func (m *Mojang) do(ctx context.Context, method, target string, body []byte) ([]byte, int, error) {
+func (m *Mojang) do(ctx context.Context, method, target string, body []byte) (raw []byte, status int, err error) {
 	request := fasthttp.AcquireRequest()
 	response := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(request)
@@ -135,7 +135,7 @@ func (m *Mojang) do(ctx context.Context, method, target string, body []byte) ([]
 		return nil, 0, err
 	}
 
-	raw := append([]byte(nil), response.Body()...)
+	raw = append([]byte(nil), response.Body()...)
 
 	return raw, response.StatusCode(), nil
 }

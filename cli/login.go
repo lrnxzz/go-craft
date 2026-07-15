@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 
@@ -19,7 +19,7 @@ func loginCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if clientID == "" {
-				return fmt.Errorf("gocraft: a Microsoft client id is required (--client-id or GOCRAFT_CLIENT_ID)")
+				return errors.New("gocraft: a Microsoft client id is required (--client-id or GOCRAFT_CLIENT_ID)")
 			}
 
 			provider := mojang.Microsoft{

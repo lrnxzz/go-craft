@@ -1,6 +1,7 @@
 package nbt
 
 import (
+	"errors"
 	"fmt"
 	"unicode/utf16"
 )
@@ -61,7 +62,7 @@ func decodeMUTF8(raw []byte) (string, error) {
 			i++
 		case lead&0xE0 == 0xC0:
 			if i+1 >= len(raw) {
-				return "", fmt.Errorf("nbt: truncated 2-byte mutf-8 sequence")
+				return "", errors.New("nbt: truncated 2-byte mutf-8 sequence")
 			}
 			if raw[i+1]&0xC0 != 0x80 {
 				return "", fmt.Errorf("nbt: invalid mutf-8 continuation byte %#x", raw[i+1])
@@ -74,10 +75,10 @@ func decodeMUTF8(raw []byte) (string, error) {
 			i += 2
 		case lead&0xF0 == 0xE0:
 			if i+2 >= len(raw) {
-				return "", fmt.Errorf("nbt: truncated 3-byte mutf-8 sequence")
+				return "", errors.New("nbt: truncated 3-byte mutf-8 sequence")
 			}
 			if raw[i+1]&0xC0 != 0x80 || raw[i+2]&0xC0 != 0x80 {
-				return "", fmt.Errorf("nbt: invalid mutf-8 continuation byte")
+				return "", errors.New("nbt: invalid mutf-8 continuation byte")
 			}
 			unit := uint16(lead&0x0F)<<12 | uint16(raw[i+1]&0x3F)<<6 | uint16(raw[i+2]&0x3F)
 			if unit < 0x800 {
