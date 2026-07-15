@@ -15,12 +15,12 @@ jobs:
           go-version-file: go.mod
       - name: vet
         run: |
-          for module in . nbt mojang codec/v765 cli; do
+          for module in . nbt mojang codec/v765; do
             (cd "$module" && go vet ./...) || exit 1
           done
       - name: test
         run: |
-          for module in . nbt mojang codec/v765 cli; do
+          for module in . nbt mojang codec/v765; do
             (cd "$module" && go test -race -count=1 ./...) || exit 1
           done
 

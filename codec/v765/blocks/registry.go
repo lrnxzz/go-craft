@@ -5,7 +5,7 @@ import (
 	"github.com/lrnxzz/go-craft/codec/v765/assets"
 )
 
-//go:generate go run github.com/lrnxzz/go-craft/gen blocks 765
+//go:generate go run github.com/lrnxzz/go-craft/cli gen blocks 765
 
 var registry = gocraft.LoadRegistry[gocraft.Block](765, assets.Blocks)
 

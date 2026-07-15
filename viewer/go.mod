@@ -7,7 +7,6 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20260707082822-2a407d02d01a
 	github.com/go-gl/mathgl v1.2.0
 	github.com/lrnxzz/go-craft v0.0.0-20260714221857-89d37686f237
-	github.com/lrnxzz/go-craft/agent v0.0.0-20260714221857-89d37686f237
 	github.com/lrnxzz/go-craft/codec/v765 v765.0.0-20260714221857-89d37686f237
 )
 

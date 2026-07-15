@@ -10,7 +10,7 @@ import (
 	"time"
 
 	gocraft "github.com/lrnxzz/go-craft"
-	"github.com/lrnxzz/go-craft/codec/v765"
+	v765 "github.com/lrnxzz/go-craft/codec/v765"
 	"github.com/lrnxzz/go-craft/codec/v765/blocks"
 )
 

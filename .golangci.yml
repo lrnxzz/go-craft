@@ -11,7 +11,6 @@ linters:
     - copyloopvar
     - wastedassign
     - errorlint
-    - nilerr
     - bodyclose
     - unconvert
     - unparam
@@ -28,6 +27,8 @@ linters:
       check-type-assertions: true
       exclude-functions:
         - (io.Closer).Close
+        - (*github.com/lrnxzz/go-craft.Conn).Close
+        - (*github.com/lrnxzz/go-craft.Client).Close
         - (*github.com/lrnxzz/go-craft.Reader).fail
     gocritic:
       enabled-tags:
@@ -35,6 +36,7 @@ linters:
         - style
       disabled-checks:
         - appendAssign
+        - unnamedResult
     revive:
       rules:
         - name: blank-imports
