@@ -93,3 +93,26 @@ func TestPlayerAlive(t *testing.T) {
 		t.Error("player with zero health should be dead")
 	}
 }
+
+func TestLookAnglesMatchLookDirection(t *testing.T) {
+	from := gocraft.Vec3(0.5, 65, 0.5)
+	targets := []gocraft.Vec3d{
+		gocraft.Vec3(10, 65, 0.5),
+		gocraft.Vec3(0.5, 70, 10),
+		gocraft.Vec3(-3, 60, -8),
+		gocraft.Vec3(0.5, 80, 0.5),
+	}
+	for _, target := range targets {
+		yaw, pitch := gocraft.LookAngles(from, target)
+		player := &gocraft.Player{
+			Yaw:   yaw,
+			Pitch: pitch,
+		}
+
+		got := player.LookDirection()
+		want := target.Sub(from).Normalize()
+		if !got.ApproxEqual(want, 1e-6) {
+			t.Errorf("LookAngles(%v) round trip = %v, want %v", target, got, want)
+		}
+	}
+}

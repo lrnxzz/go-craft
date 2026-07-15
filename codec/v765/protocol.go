@@ -39,6 +39,8 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[BlockUpdate](proto)
 	gocraft.Bind[SectionBlocksUpdate](proto)
 	gocraft.Bind[SetHealth](proto)
+	gocraft.Bind[PlayerAbilities](proto)
+	gocraft.Bind[SetExperience](proto)
 	gocraft.Bind[PlayDisconnect](proto)
 
 	return proto

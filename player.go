@@ -35,19 +35,32 @@ const (
 	eyeHeight    = 1.62
 )
 
+type Abilities struct {
+	Invulnerable bool
+	Flying       bool
+	AllowFlight  bool
+	InstantBuild bool
+	FlySpeed     float32
+	FieldOfView  float32
+}
+
 type Player struct {
-	EntityID   int32
-	UUID       UUID
-	Username   string
-	Position   Vec3d
-	Yaw        float32
-	Pitch      float32
-	OnGround   bool
-	Health     float32
-	Food       int32
-	Saturation float32
-	GameMode   GameMode
-	Dimension  Identifier
+	EntityID        int32
+	UUID            UUID
+	Username        string
+	Position        Vec3d
+	Yaw             float32
+	Pitch           float32
+	OnGround        bool
+	Health          float32
+	Food            int32
+	Saturation      float32
+	Experience      float32
+	Level           int32
+	TotalExperience int32
+	GameMode        GameMode
+	Dimension       Identifier
+	Abilities       Abilities
 }
 
 func (p *Player) Eye() Vec3d {
@@ -67,6 +80,15 @@ func (p *Player) LookDirection() Vec3d {
 
 func (p *Player) Box() AABB {
 	return BoxAround(p.Position, playerWidth, playerHeight)
+}
+
+func LookAngles(from, to Vec3d) (float32, float32) {
+	delta := to.Sub(from)
+
+	yaw := math.Atan2(-delta.X, delta.Z) * 180 / math.Pi
+	pitch := -math.Atan2(delta.Y, delta.HorizontalLength()) * 180 / math.Pi
+
+	return float32(yaw), float32(pitch)
 }
 
 func (p *Player) Alive() bool {

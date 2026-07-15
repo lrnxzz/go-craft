@@ -415,6 +415,92 @@ func (p *SectionBlocksUpdate) Changes() []BlockChange {
 	return changes
 }
 
+type PlayerAbilities struct {
+	Flags       gocraft.Byte
+	FlyingSpeed gocraft.Float
+	FieldOfView gocraft.Float
+}
+
+func (*PlayerAbilities) ID() int32 {
+	return 0x36
+}
+
+func (*PlayerAbilities) Name() string {
+	return "PlayerAbilities"
+}
+
+func (*PlayerAbilities) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*PlayerAbilities) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
+func (p PlayerAbilities) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Flags, p.FlyingSpeed, p.FieldOfView)
+}
+
+func (p *PlayerAbilities) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Flags, &p.FlyingSpeed, &p.FieldOfView)
+}
+
+const (
+	abilityInvulnerable byte = 1 << iota
+	abilityFlying
+	abilityAllowFlight
+	abilityInstantBuild
+)
+
+func (p *PlayerAbilities) Apply(player *gocraft.Player) {
+	flags := byte(p.Flags)
+
+	player.Abilities = gocraft.Abilities{
+		Invulnerable: flags&abilityInvulnerable != 0,
+		Flying:       flags&abilityFlying != 0,
+		AllowFlight:  flags&abilityAllowFlight != 0,
+		InstantBuild: flags&abilityInstantBuild != 0,
+		FlySpeed:     p.FlyingSpeed.Float32(),
+		FieldOfView:  p.FieldOfView.Float32(),
+	}
+}
+
+type SetExperience struct {
+	Bar             gocraft.Float
+	Level           gocraft.VarInt
+	TotalExperience gocraft.VarInt
+}
+
+func (*SetExperience) ID() int32 {
+	return 0x5A
+}
+
+func (*SetExperience) Name() string {
+	return "SetExperience"
+}
+
+func (*SetExperience) State() gocraft.State {
+	return gocraft.StatePlay
+}
+
+func (*SetExperience) Direction() gocraft.Direction {
+	return gocraft.Clientbound
+}
+
+func (p SetExperience) Append(dst []byte) []byte {
+	return gocraft.AppendAll(dst, p.Bar, p.Level, p.TotalExperience)
+}
+
+func (p *SetExperience) Decode(r *gocraft.Reader) error {
+	return gocraft.DecodeAll(r, &p.Bar, &p.Level, &p.TotalExperience)
+}
+
+func (p *SetExperience) Apply(player *gocraft.Player) {
+	player.Experience = p.Bar.Float32()
+	player.Level = p.Level.Int32()
+	player.TotalExperience = p.TotalExperience.Int32()
+}
+
 type SetHealth struct {
 	Health     gocraft.Float
 	Food       gocraft.VarInt

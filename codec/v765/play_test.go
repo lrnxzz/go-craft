@@ -136,3 +136,67 @@ func TestConfirmTeleportCarriesTeleportID(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, original)
 	}
 }
+
+func TestPlayerAbilitiesAppliesFlags(t *testing.T) {
+	original := &v765.PlayerAbilities{
+		Flags:       0x0D,
+		FlyingSpeed: 0.05,
+		FieldOfView: 0.1,
+	}
+
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("player abilities not registered")
+	}
+
+	got := decoded.(*v765.PlayerAbilities)
+	if *got != *original {
+		t.Errorf("got %+v, want %+v", got, original)
+	}
+
+	player := &gocraft.Player{}
+	got.Apply(player)
+
+	if !player.Abilities.Invulnerable || !player.Abilities.AllowFlight || !player.Abilities.InstantBuild {
+		t.Errorf("abilities = %+v, want invulnerable, allow flight and instant build", player.Abilities)
+	}
+	if player.Abilities.Flying {
+		t.Errorf("abilities = %+v, want not flying", player.Abilities)
+	}
+	if player.Abilities.FlySpeed != 0.05 {
+		t.Errorf("fly speed = %v, want 0.05", player.Abilities.FlySpeed)
+	}
+}
+
+func TestSetExperienceAppliesProgress(t *testing.T) {
+	original := &v765.SetExperience{
+		Bar:             0.5,
+		Level:           30,
+		TotalExperience: 825,
+	}
+
+	proto := v765.Protocol()
+	decoded, ok, err := proto.Decode(gocraft.StatePlay, gocraft.Clientbound, gocraft.EncodeFrame(original))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("set experience not registered")
+	}
+
+	got := decoded.(*v765.SetExperience)
+	if *got != *original {
+		t.Errorf("got %+v, want %+v", got, original)
+	}
+
+	player := &gocraft.Player{}
+	got.Apply(player)
+
+	if player.Experience != 0.5 || player.Level != 30 || player.TotalExperience != 825 {
+		t.Errorf("player xp = (%v, %v, %v), want (0.5, 30, 825)", player.Experience, player.Level, player.TotalExperience)
+	}
+}

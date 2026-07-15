@@ -8,21 +8,29 @@ import (
 
 	gocraft "github.com/lrnxzz/go-craft"
 	"github.com/lrnxzz/go-craft/mojang"
+	"github.com/lrnxzz/go-craft/nbt"
 )
 
-const (
-	overworldMinY   = -64
-	overworldHeight = 384
-)
+type dimensionBounds struct {
+	minY   int
+	height int
+}
+
+var overworld = dimensionBounds{
+	minY:   -64,
+	height: 384,
+}
 
 type JoinHandler func(*gocraft.Client, *JoinGame) error
 
 type Session struct {
-	client  *gocraft.Client
-	world   *gocraft.World
-	player  *gocraft.Player
-	ready   JoinHandler
-	spawned bool
+	client     *gocraft.Client
+	world      *gocraft.World
+	player     *gocraft.Player
+	ready      JoinHandler
+	spawned    bool
+	dimensions map[gocraft.Identifier]dimensionBounds
+	bounds     dimensionBounds
 }
 
 func Join(client *gocraft.Client, host string, port uint16, username string, onReady JoinHandler) (*Session, error) {
@@ -39,10 +47,12 @@ func Join(client *gocraft.Client, host string, port uint16, username string, onR
 	}
 
 	session := &Session{
-		client: client,
-		world:  gocraft.NewWorld(),
-		player: &gocraft.Player{},
-		ready:  onReady,
+		client:     client,
+		world:      gocraft.NewWorld(),
+		player:     &gocraft.Player{},
+		ready:      onReady,
+		dimensions: map[gocraft.Identifier]dimensionBounds{},
+		bounds:     overworld,
 	}
 	session.listen()
 
@@ -83,6 +93,7 @@ func (s *Session) listen() {
 
 	gocraft.On(s.client, s.onConfigKeepAlive)
 	gocraft.On(s.client, s.onConfigPing)
+	gocraft.On(s.client, s.onRegistryData)
 	gocraft.On(s.client, s.onFinishConfiguration)
 	gocraft.On(s.client, s.onConfigDisconnect)
 
@@ -94,7 +105,55 @@ func (s *Session) listen() {
 	gocraft.On(s.client, s.onBlockUpdate)
 	gocraft.On(s.client, s.onSectionBlocks)
 	gocraft.On(s.client, s.onHealth)
+	gocraft.On(s.client, s.onAbilities)
+	gocraft.On(s.client, s.onExperience)
 	gocraft.On(s.client, s.onPlayDisconnect)
+}
+
+func (s *Session) onRegistryData(c *gocraft.Client, p *RegistryData) error {
+	registry, ok := nbt.Get[nbt.Compound](nbt.Compound(p.Codec), "minecraft:dimension_type")
+	if !ok {
+		return nil
+	}
+
+	entries, ok := nbt.Get[nbt.List](registry, "value")
+	if !ok {
+		return nil
+	}
+
+	types, ok := nbt.Items[nbt.Compound](entries)
+	if !ok {
+		return nil
+	}
+
+	for _, entry := range types {
+		name, ok := nbt.Get[nbt.String](entry, "name")
+		if !ok {
+			continue
+		}
+
+		element, ok := nbt.Get[nbt.Compound](entry, "element")
+		if !ok {
+			continue
+		}
+
+		minY, ok := nbt.Get[nbt.Int](element, "min_y")
+		if !ok {
+			continue
+		}
+
+		height, ok := nbt.Get[nbt.Int](element, "height")
+		if !ok {
+			continue
+		}
+
+		s.dimensions[gocraft.Identifier(name)] = dimensionBounds{
+			minY:   int(minY),
+			height: int(height),
+		}
+	}
+
+	return nil
 }
 
 func (s *Session) onCompression(c *gocraft.Client, p *SetCompression) error {
@@ -153,6 +212,12 @@ func (s *Session) onConfigDisconnect(c *gocraft.Client, p *ConfigDisconnect) err
 func (s *Session) onJoinGame(c *gocraft.Client, p *JoinGame) error {
 	p.Apply(s.player)
 
+	bounds, ok := s.dimensions[p.DimensionType]
+	if !ok {
+		bounds = overworld
+	}
+	s.bounds = bounds
+
 	if s.ready != nil {
 		return s.ready(c, p)
 	}
@@ -187,7 +252,7 @@ func (s *Session) SendPosition() error {
 }
 
 func (s *Session) onChunkData(c *gocraft.Client, p *ChunkData) error {
-	column, err := p.Column(overworldMinY, overworldHeight)
+	column, err := p.Column(s.bounds.minY, s.bounds.height)
 	if err != nil {
 		return err
 	}
@@ -219,6 +284,18 @@ func (s *Session) onSectionBlocks(c *gocraft.Client, p *SectionBlocksUpdate) err
 }
 
 func (s *Session) onHealth(c *gocraft.Client, p *SetHealth) error {
+	p.Apply(s.player)
+
+	return nil
+}
+
+func (s *Session) onAbilities(c *gocraft.Client, p *PlayerAbilities) error {
+	p.Apply(s.player)
+
+	return nil
+}
+
+func (s *Session) onExperience(c *gocraft.Client, p *SetExperience) error {
 	p.Apply(s.player)
 
 	return nil
