@@ -7,6 +7,9 @@ import (
 	"fmt"
 
 	gocraft "github.com/lrnxzz/go-craft"
+	"github.com/lrnxzz/go-craft/codec/v765/blocks"
+	"github.com/lrnxzz/go-craft/codec/v765/items"
+	"github.com/lrnxzz/go-craft/lib"
 	"github.com/lrnxzz/go-craft/mojang"
 	"github.com/lrnxzz/go-craft/nbt"
 )
@@ -34,6 +37,12 @@ type Session struct {
 	inventory  gocraft.Inventory
 	carried    gocraft.ItemStack
 	stateID    int32
+	pending    lib.Pending[blockPrediction]
+}
+
+type blockPrediction struct {
+	position gocraft.Position
+	server   gocraft.BlockState
 }
 
 func Join(client *gocraft.Client, host string, port uint16, username string, onReady JoinHandler) (*Session, error) {
@@ -113,7 +122,107 @@ func (s *Session) listen() {
 	gocraft.On(s.client, s.onContainerContent)
 	gocraft.On(s.client, s.onContainerSlot)
 	gocraft.On(s.client, s.onHeldItem)
+	gocraft.On(s.client, s.onBlockAck)
 	gocraft.On(s.client, s.onPlayDisconnect)
+}
+
+func (s *Session) onBlockAck(c *gocraft.Client, p *AcknowledgeBlockChange) error {
+	for _, prediction := range s.pending.Ack(p.Sequence.Int32()) {
+		s.world.SetBlock(prediction.position.X, prediction.position.Y, prediction.position.Z, prediction.server)
+	}
+
+	return nil
+}
+
+func (s *Session) StartDigging(hit gocraft.RayHit) error {
+	return s.action(digStart, hit)
+}
+
+func (s *Session) CancelDigging(hit gocraft.RayHit) error {
+	return s.action(digCancel, hit)
+}
+
+func (s *Session) FinishDigging(hit gocraft.RayHit) error {
+	if err := s.action(digFinish, hit); err != nil {
+		return err
+	}
+
+	s.world.SetBlock(hit.Block.X, hit.Block.Y, hit.Block.Z, 0)
+
+	return nil
+}
+
+func (s *Session) action(status gocraft.VarInt, hit gocraft.RayHit) error {
+	packet := &PlayerAction{
+		Status:   status,
+		Location: hit.Block,
+		Face:     gocraft.Byte(hit.Face),
+		Sequence: gocraft.VarInt(s.pending.Push(s.predict(hit.Block))),
+	}
+
+	return s.client.Send(packet)
+}
+
+func (s *Session) PlaceBlock(hit gocraft.RayHit) error {
+	placed := hit.Block.Neighbor(hit.Face)
+	cursor := hit.Point.Sub(hit.Block.Corner())
+
+	use := &UseItemOn{
+		Hand:     mainHand,
+		Location: hit.Block,
+		Face:     gocraft.VarInt(hit.Face),
+		CursorX:  gocraft.Float(cursor.X),
+		CursorY:  gocraft.Float(cursor.Y),
+		CursorZ:  gocraft.Float(cursor.Z),
+		Sequence: gocraft.VarInt(s.pending.Push(s.predict(placed))),
+	}
+	if err := s.client.Send(use); err != nil {
+		return err
+	}
+
+	held, ok := items.Of(s.inventory.Held().Item)
+	if !ok {
+		return nil
+	}
+
+	block, ok := blocks.Named(held.Name)
+	if !ok {
+		return nil
+	}
+
+	s.world.SetBlock(placed.X, placed.Y, placed.Z, block.DefaultState)
+
+	return nil
+}
+
+func (s *Session) predict(position gocraft.Position) blockPrediction {
+	server, _ := s.world.BlockAt(position)
+
+	return blockPrediction{
+		position: position,
+		server:   server,
+	}
+}
+
+func (s *Session) applyServerBlock(change BlockChange) {
+	position := gocraft.Position{
+		X: change.X,
+		Y: change.Y,
+		Z: change.Z,
+	}
+
+	predicted := false
+	s.pending.Each(func(prediction *blockPrediction) {
+		if prediction.position == position {
+			prediction.server = change.State
+			predicted = true
+		}
+	})
+	if predicted {
+		return
+	}
+
+	s.world.SetBlock(change.X, change.Y, change.Z, change.State)
 }
 
 func (s *Session) onRegistryData(c *gocraft.Client, p *RegistryData) error {
@@ -275,15 +384,14 @@ func (s *Session) onUnloadChunk(c *gocraft.Client, p *UnloadChunk) error {
 }
 
 func (s *Session) onBlockUpdate(c *gocraft.Client, p *BlockUpdate) error {
-	b := p.Change()
-	s.world.SetBlock(b.X, b.Y, b.Z, b.State)
+	s.applyServerBlock(p.Change())
 
 	return nil
 }
 
 func (s *Session) onSectionBlocks(c *gocraft.Client, p *SectionBlocksUpdate) error {
-	for _, b := range p.Changes() {
-		s.world.SetBlock(b.X, b.Y, b.Z, b.State)
+	for _, change := range p.Changes() {
+		s.applyServerBlock(change)
 	}
 
 	return nil

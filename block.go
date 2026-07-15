@@ -66,12 +66,16 @@ const (
 )
 
 type Block struct {
-	Name         Identifier  `json:"name"`
-	MinState     BlockState  `json:"minStateId"`
-	MaxState     BlockState  `json:"maxStateId"`
-	DefaultState BlockState  `json:"defaultState"`
-	BoundingBox  BoundingBox `json:"boundingBox"`
-	Properties   []Property  `json:"states"`
+	Name         Identifier      `json:"name"`
+	MinState     BlockState      `json:"minStateId"`
+	MaxState     BlockState      `json:"maxStateId"`
+	DefaultState BlockState      `json:"defaultState"`
+	BoundingBox  BoundingBox     `json:"boundingBox"`
+	Hardness     float64         `json:"hardness"`
+	Diggable     bool            `json:"diggable"`
+	Material     string          `json:"material"`
+	HarvestTools map[ItemID]bool `json:"harvestTools"`
+	Properties   []Property      `json:"states"`
 }
 
 func (b Block) Solid() bool {

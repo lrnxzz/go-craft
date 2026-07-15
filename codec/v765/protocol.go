@@ -34,6 +34,8 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[HeldItemChange](proto)
 	gocraft.Bind[ClickContainer](proto)
 	gocraft.Bind[CloseContainer](proto)
+	gocraft.Bind[PlayerAction](proto)
+	gocraft.Bind[UseItemOn](proto)
 	gocraft.Bind[JoinGame](proto)
 	gocraft.Bind[PlayKeepAlive](proto)
 	gocraft.Bind[SyncPlayerPosition](proto)
@@ -47,6 +49,7 @@ func Protocol() *gocraft.Protocol {
 	gocraft.Bind[SetContainerContent](proto)
 	gocraft.Bind[SetContainerSlot](proto)
 	gocraft.Bind[SetHeldItem](proto)
+	gocraft.Bind[AcknowledgeBlockChange](proto)
 	gocraft.Bind[PlayDisconnect](proto)
 
 	return proto

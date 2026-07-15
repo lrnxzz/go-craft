@@ -30,7 +30,7 @@ const (
 `))
 
 func blocksCommand() *cobra.Command {
-	return generator[block]{
+	return generator[[]block]{
 		name:     "blocks",
 		asset:    "blocks.json",
 		output:   "blocks.go",

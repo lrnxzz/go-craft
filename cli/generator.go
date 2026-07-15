@@ -20,7 +20,7 @@ type generator[T any] struct {
 
 type versionedEntries[T any] struct {
 	Version string
-	Entries []T
+	Entries T
 }
 
 func (g generator[T]) command() *cobra.Command {
@@ -40,7 +40,7 @@ func (g generator[T]) render(version string) error {
 		return err
 	}
 
-	var entries []T
+	var entries T
 	if err := json.Unmarshal(raw, &entries); err != nil {
 		return err
 	}

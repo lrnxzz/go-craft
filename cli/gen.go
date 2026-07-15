@@ -15,6 +15,7 @@ func genCommand() *cobra.Command {
 	command.AddCommand(blocksCommand())
 	command.AddCommand(biomesCommand())
 	command.AddCommand(itemsCommand())
+	command.AddCommand(materialsCommand())
 	command.AddCommand(atlasCommand())
 
 	return command

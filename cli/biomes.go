@@ -30,7 +30,7 @@ const (
 `))
 
 func biomesCommand() *cobra.Command {
-	return generator[biome]{
+	return generator[[]biome]{
 		name:     "biomes",
 		asset:    "biomes.json",
 		output:   "biomes.go",
